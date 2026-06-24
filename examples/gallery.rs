@@ -10,7 +10,10 @@
 use iced::widget::{column, row, Space};
 use iced::{Element, Length, Theme};
 use rime::theme::{self, ThemeChoice};
-use rime::widgets::{button, card, header_row, labeled, pill, section, stat, text_field};
+use rime::widgets::{
+    button, card, header_row, labeled, line_chart, pill, section, stat, text_field, LineChart,
+    Series,
+};
 
 #[derive(Default)]
 struct Gallery {
@@ -71,6 +74,35 @@ impl Gallery {
                     stat("rps", "1.2k".to_string()),
                 ]
                 .spacing(32),
+                section("Chart"),
+                line_chart(
+                    LineChart {
+                        title: "demo series".to_string(),
+                        series: vec![
+                            Series {
+                                points: vec![
+                                    (0.0, 2.0),
+                                    (1.0, 5.0),
+                                    (2.0, 3.0),
+                                    (3.0, 8.0),
+                                    (4.0, 6.0)
+                                ],
+                                color: t.accent,
+                            },
+                            Series {
+                                points: vec![
+                                    (0.0, 1.0),
+                                    (1.0, 2.0),
+                                    (2.0, 4.0),
+                                    (3.0, 3.0),
+                                    (4.0, 5.0)
+                                ],
+                                color: t.success,
+                            },
+                        ],
+                    },
+                    160.0,
+                ),
                 Space::with_height(8),
                 button::secondary("Toggle theme", Message::ToggleTheme),
             ]

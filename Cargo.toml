@@ -8,7 +8,7 @@ description = "A small, consistent component kit on top of iced."
 repository = "https://github.com/nycjv321/rime"
 
 [dependencies]
-iced = { version = "0.13" }
+iced = { version = "0.13", features = ["canvas"] }
 
 [[example]]
 name = "gallery"

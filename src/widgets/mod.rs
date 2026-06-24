@@ -9,6 +9,7 @@
 
 pub mod button;
 mod card;
+pub mod chart;
 mod field;
 mod header;
 mod input;
@@ -17,6 +18,7 @@ mod section;
 mod stat;
 
 pub use card::card;
+pub use chart::{line_chart, LineChart, Series};
 pub use field::labeled;
 pub use header::header_row;
 pub use input::text_field;
