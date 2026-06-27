@@ -15,7 +15,9 @@ mod header;
 mod input;
 mod pill;
 mod section;
+mod select;
 mod stat;
+mod tooltip;
 
 pub use card::card;
 pub use chart::{line_chart, LineChart, Series};
@@ -24,4 +26,6 @@ pub use header::header_row;
 pub use input::text_field;
 pub use pill::pill;
 pub use section::section;
+pub use select::select;
 pub use stat::stat;
+pub use tooltip::{tooltip, Position as TooltipPosition};

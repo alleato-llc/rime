@@ -11,8 +11,8 @@ use iced::widget::{column, row, Space};
 use iced::{Element, Length, Theme};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    button, card, header_row, labeled, line_chart, pill, section, stat, text_field, LineChart,
-    Series,
+    button, card, header_row, labeled, line_chart, pill, section, stat, text_field, tooltip,
+    LineChart, Series, TooltipPosition,
 };
 
 #[derive(Default)]
@@ -63,6 +63,20 @@ impl Gallery {
                     pill("done", t.success),
                     pill("queued", t.muted),
                     pill("failed", t.danger),
+                ]
+                .spacing(8),
+                section("Tooltip"),
+                row![
+                    tooltip(
+                        pill("hover me", t.accent),
+                        "A tooltip explains the thing under the cursor — pairs with a pill.",
+                        TooltipPosition::Top,
+                    ),
+                    tooltip(
+                        button::secondary("or me", Message::Noop),
+                        "Works on any element, not just pills.",
+                        TooltipPosition::Right,
+                    ),
                 ]
                 .spacing(8),
                 section("Field + input"),
