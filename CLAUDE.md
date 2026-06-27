@@ -37,11 +37,11 @@ version.
 cargo fmt --all
 cargo clippy --all-targets -- -D warnings   # must be clean
 cargo test                                  # must be green
-cargo run --example gallery                 # the only real visual check
+cargo run -p rime-demo                       # the only real visual check
 ```
 
-A GUI can't be verified headlessly, so `examples/gallery.rs` — every component on
-one screen, with a theme toggle — *is* the visual test. Any new or changed
+A GUI can't be verified headlessly, so `rime-demo` (the `demo/` crate) — every
+component on one screen, with a theme toggle — *is* the visual test. Any new or changed
 component must appear there, and must re-color correctly when the theme is toggled
 (proof no hardcoded color leaked).
 
@@ -74,7 +74,7 @@ component must appear there, and must re-color correctly when the theme is toggl
 ## Gotchas
 
 - **No headless visual check** — build + clippy + `cargo test` cover the layers
-  under the pixels; the rendering needs `cargo run --example gallery` on a machine
+  under the pixels; the rendering needs `cargo run -p rime-demo` on a machine
   with a display.
 - **iced 0.13.** Styling is `fn(&Theme, Status) -> SomeStyle`, not objects; the
   five-slot `iced::theme::Palette` is *separate* from rime's nine-token `Palette`

@@ -1,15 +1,9 @@
-[package]
-name = "rime"
-version = "0.1.0"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-rust-version = "1.85"
-description = "A small, consistent component kit on top of iced."
-repository = "https://github.com/nycjv321/rime"
+# Virtual workspace: the `rime` component kit and `rime-demo`, the showcase app
+# that exercises every component (run with `cargo run -p rime-demo`).
+[workspace]
+resolver = "2"
+members = ["rime", "demo"]
 
-[dependencies]
+# iced is shared by the kit and the demo; pin it once so they never drift.
+[workspace.dependencies]
 iced = { version = "0.13", features = ["canvas"] }
-
-[[example]]
-name = "gallery"
-path = "examples/gallery.rs"

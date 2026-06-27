@@ -28,8 +28,8 @@ re-deriving padding, color, or radius — and what keep the kit portable.
 6. **No app state, no I/O, no domain types.** A component takes data it defines
    itself (`&[TreeNode]`), not the app's structs. Expansion/selection/scroll state
    is owned by the *caller* — the kit stays stateless.
-7. **Re-export it** from `src/widgets/mod.rs` and **show it in
-   `examples/gallery.rs`**. The gallery is the only real visual test (a GUI can't
+7. **Re-export it** from `rime/src/widgets/mod.rs` and **show it in the demo**
+   (`demo/src/main.rs`). The demo is the only real visual test (a GUI can't
    be verified headlessly), so a component that isn't in it is untested.
 
 ## The gate
@@ -40,10 +40,10 @@ Before committing a new component:
 cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 cargo test
-cargo run --example gallery        # look at it on both themes
+cargo run -p rime-demo        # look at it on both themes
 ```
 
-`gallery` has a theme toggle: confirm the component re-colors correctly from the
+The demo has a theme toggle: confirm the component re-colors correctly from the
 palette alone (no hardcoded colors leaked).
 
 ## Worked example: a `tree`
@@ -103,7 +103,7 @@ pub fn tree<'a, M: Clone + 'a>(
 ```
 
 Then: re-export `pub use tree::{tree, Node as TreeNode};` from `widgets/mod.rs`,
-add a small tree to `gallery.rs`, and run the gate. Note it reads `tokens()` only
+add a small tree to the demo (`demo/src/main.rs`), and run the gate. Note it reads `tokens()` only
 through `rounded` here; a richer tree drawing its own row backgrounds would capture
 `tokens()` per rule 5. (`tokens` is imported above for that case.)
 

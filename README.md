@@ -59,7 +59,7 @@ correctly under any palette.
 `header_row`, `pill`, `section`, `stat`. See them all on one screen:
 
 ```sh
-cargo run --example gallery
+cargo run -p rime-demo
 ```
 
 ## What belongs here
@@ -75,7 +75,7 @@ component must meet.
 cargo fmt --all
 cargo clippy --all-targets -- -D warnings
 cargo test
-cargo run --example gallery   # the only real visual check
+cargo run -p rime-demo        # the only real visual check
 ```
 
 License: MIT OR Apache-2.0.

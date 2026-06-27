@@ -1,0 +1,10 @@
+[package]
+name = "rime-demo"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Showcase app exercising every rime component (cargo run -p rime-demo)."
+
+[dependencies]
+rime = { path = "../rime" }
+iced = { workspace = true }
