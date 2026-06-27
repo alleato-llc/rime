@@ -25,8 +25,8 @@ One crate, two modules.
   (`rounded`/`input_style`/`pick_style`/`editor_style`). Split across
   `theme/{mod,palettes,style}.rs`.
 - `widgets` — one primitive per file (`button`, `card`, `input`, `pill`, `stat`,
-  `field`, `header`, …), each generic over the message type, stateless, drawing
-  from `theme::tokens()`.
+  `field`, `header`, `section`, `chart`/`line_chart`, `select`, `tooltip`), each
+  generic over the message type, stateless, drawing from `theme::tokens()`.
 
 `iced` is re-exported at the crate root (`rime::iced`) so dependents share one
 version.

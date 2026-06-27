@@ -56,7 +56,8 @@ correctly under any palette.
 ## Components
 
 `button` (primary/secondary/danger/ghost), `card`, `text_field`, `labeled`,
-`header_row`, `pill`, `section`, `stat`. See them all on one screen:
+`select` (dropdown), `header_row`, `pill`, `section`, `stat`, `line_chart`, and
+`tooltip`. See them all on one screen:
 
 ```sh
 cargo run -p rime-demo
