@@ -141,6 +141,40 @@ Subscription::run_with(root, |root: &PathBuf| {
 `iced::theme::Palette` gained a **`warning`** slot (between `success` and
 `danger`). rime maps its `warn` token there in `Palette::iced_theme`.
 
+## Multi-window (`daemon` vs `application`)
+
+`application`'s `view`/`title`/`theme` take only `&State` — **one view for every
+window**, even if you open more. For *different* content per window (e.g. a detached
+editor), use **`iced::daemon(boot, update, view)`**, whose `view(&State,
+window::Id)` / `title(&State, window::Id)` / `theme(&State, window::Id)` are
+window-aware. Route inside `view` on the id.
+
+- A daemon **opens no window itself**. `boot` returns `(State, Task)`; include a
+  `window::open` task. `window::open(settings) -> (Id, Task<Id>)` mints the **`Id`
+  synchronously**, so you can store it in state during `boot` and `task.discard()`
+  the open task:
+  ```rust
+  iced::daemon(move || {
+      let mut state = State::new();
+      let (id, open) = iced::window::open(iced::window::Settings { size, ..Default::default() });
+      state.main_window = Some(id);
+      (state, open.discard())
+  }, update, view)
+  .title(|s, w| …).theme(|s, _w| …).subscription(sub).run()
+  ```
+- Window settings live in `window::open`'s `Settings` (no `.window_size()` builder
+  like `application` has). Per-window `exit_on_close_request: true` only **closes that
+  window**, *not* the daemon — a daemon keeps running after its last window closes, so
+  exit is explicit: `iced::exit()` (re-exported from `iced_runtime`).
+- Lifecycle: `window::open_events()/close_events()/close_requests() -> Subscription<Id>`;
+  `window::close(id)`, `drag(id)`, `move_to`, `fetch_position`/`fetch_size` are Tasks.
+- `event::listen_with(|event, status, window: window::Id| …)` — the **third arg is the
+  window id**, so window `Focused`/`Resized`/`Moved` events can be attributed per
+  window without a separate subscription.
+- No cross-window **drag-and-drop**: there's no "dropped onto that window" event. To
+  drag content between windows you must track positions (`Moved`) and infer overlap
+  yourself — a heuristic, not a supported gesture.
+
 ---
 
 ## 0.13 → 0.14 diff (quick index)
