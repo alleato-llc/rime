@@ -48,6 +48,6 @@ pub use settings::settings;
 pub use stat::stat;
 pub use status_bar::status_bar;
 pub use stepper::stepper;
-pub use tabs::{tabs, Tab};
+pub use tabs::{tabs, Tab, TAB_BAR_HEIGHT};
 pub use toggle::toggle;
 pub use tooltip::{tooltip, Position as TooltipPosition};

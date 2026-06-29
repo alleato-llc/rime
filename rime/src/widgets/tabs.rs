@@ -10,6 +10,10 @@ use iced::{Element, Font, Length};
 
 use crate::theme::tokens;
 
+/// The strip's rendered height in logical pixels — hosts that lay content beside
+/// the tabs (e.g. a sidebar) can pad by this to align their content tops.
+pub const TAB_BAR_HEIGHT: f32 = 33.0;
+
 /// One tab's display state: its `label` and whether the document is `dirty`
 /// (unsaved). A dirty tab is marked with a leading dot.
 #[derive(Debug, Clone)]
@@ -41,7 +45,9 @@ impl Tab {
 /// close button is shown only on the `hovered` tab; `on_hover(Some(i))` fires when
 /// the pointer enters tab `i` and `on_hover(None)` when it leaves the strip.
 /// `on_background_press` fires when the empty area past the last tab is clicked
-/// (hosts typically treat a double-click there as "new tab").
+/// (hosts typically treat a double-click there as "new tab"). `on_right_press(i)`
+/// fires on a secondary click on tab `i` (hosts open a context menu).
+#[allow(clippy::too_many_arguments)]
 pub fn tabs<'a, M: Clone + 'a>(
     tabs: Vec<Tab>,
     active: usize,
@@ -49,6 +55,7 @@ pub fn tabs<'a, M: Clone + 'a>(
     on_activate: impl Fn(usize) -> M + 'a,
     on_close: impl Fn(usize) -> M + 'a,
     on_hover: impl Fn(Option<usize>) -> M + 'a,
+    on_right_press: impl Fn(usize) -> M + 'a,
     on_background_press: M,
 ) -> Element<'a, M> {
     let p = tokens();
@@ -77,9 +84,12 @@ pub fn tabs<'a, M: Clone + 'a>(
         } else {
             Space::new().width(Length::Fixed(20.0)).into()
         };
-        // Wrap each tab so entering it reports the hover index.
+        // Wrap each tab so entering it reports the hover index, and a right-press
+        // reports the tab index (the host anchors a context menu there).
         strip = strip.push(
-            mouse_area(Row::new().push(body).push(close)).on_enter(on_hover(Some(i))),
+            mouse_area(Row::new().push(body).push(close))
+                .on_enter(on_hover(Some(i)))
+                .on_right_press(on_right_press(i)),
         );
     }
 

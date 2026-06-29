@@ -59,6 +59,11 @@ so current work lives under **Unreleased**.
   `rime-demo`.
 
 ### Changed
+- **`tabs` gained a right-press hook + a published bar height.** A new
+  `on_tab_right_press(usize) -> M` callback fires on right-click (or macOS
+  ⌃-click) of a tab, so a host can anchor a context menu to it (fed-ide's tab
+  close-menu). The strip's row height is now exported as `TAB_BAR_HEIGHT`, so a
+  host can align an adjacent pane's top to the tab strip.
 - **`settings` panel is now responsive** — it fills the window (capped at
   1100×860, inset by a margin) instead of a fixed 680×460, so resizing the host
   window resizes the settings panel.
