@@ -117,7 +117,7 @@ impl Gallery {
                     },
                     160.0,
                 ),
-                Space::with_height(8),
+                Space::new().height(8),
                 button::secondary("Toggle theme", Message::ToggleTheme),
             ]
             .spacing(16),
@@ -133,7 +133,8 @@ impl Gallery {
 }
 
 fn main() -> iced::Result {
-    iced::application("rime gallery", Gallery::update, Gallery::view)
+    iced::application(Gallery::default, Gallery::update, Gallery::view)
+        .title("rime gallery")
         .theme(Gallery::theme)
         .window_size(iced::Size::new(760.0, 640.0))
         .run()

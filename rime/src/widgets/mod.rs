@@ -7,25 +7,47 @@
 //! state, and reads its colors from [`crate::theme::tokens`] — never a hardcoded
 //! color. See `COMPONENTS.md` for the contract a new primitive must meet.
 
+mod banner;
 pub mod button;
 mod card;
 pub mod chart;
+mod color_field;
+mod context_menu;
+mod dialog;
 mod field;
 mod header;
 mod input;
+pub mod menu;
+mod modal;
 mod pill;
 mod section;
 mod select;
+mod settings;
 mod stat;
+mod status_bar;
+mod stepper;
+mod tabs;
+mod toggle;
 mod tooltip;
 
+pub use banner::banner;
 pub use card::card;
 pub use chart::{line_chart, LineChart, Series};
+pub use color_field::color_field;
+pub use context_menu::context_menu;
+pub use dialog::dialog;
 pub use field::labeled;
 pub use header::header_row;
 pub use input::text_field;
+pub use menu::{menu_bar, Item as MenuItem, Menu};
+pub use modal::modal;
 pub use pill::pill;
 pub use section::section;
 pub use select::select;
+pub use settings::settings;
 pub use stat::stat;
+pub use status_bar::status_bar;
+pub use stepper::stepper;
+pub use tabs::{tabs, Tab};
+pub use toggle::toggle;
 pub use tooltip::{tooltip, Position as TooltipPosition};

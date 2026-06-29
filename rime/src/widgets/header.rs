@@ -9,7 +9,7 @@ use crate::theme::tokens;
 pub fn header_row<'a, M: 'a>(title: &'a str, notice: &'a str) -> Element<'a, M> {
     row![
         text(title).size(22).color(tokens().ink),
-        Space::with_width(Length::Fill),
+        Space::new().width(Length::Fill),
         text(notice).size(13).color(tokens().warn),
     ]
     .align_y(iced::Alignment::Center)

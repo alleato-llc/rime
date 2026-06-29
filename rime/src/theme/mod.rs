@@ -18,9 +18,11 @@ use std::path::Path;
 use iced::{Color, Theme};
 
 mod palettes;
+mod registry;
 mod style;
 
 pub use palettes::{DRACULA, GITHUB};
+pub use registry::{NamedTheme, ThemeRegistry};
 pub use style::{editor_style, input_style, pick_style, rounded};
 
 /// The nine semantic colors every component draws with — one coherent set per
@@ -62,9 +64,72 @@ impl Palette {
                 text: self.ink,
                 primary: self.accent,
                 success: self.success,
+                warning: self.warn,
                 danger: self.danger,
             },
         )
+    }
+
+    /// Read a token by its [`PALETTE_KEYS`] name (for a theme editor / serializer);
+    /// `None` for an unknown key.
+    pub fn color(&self, key: &str) -> Option<Color> {
+        Some(match key {
+            "bg" => self.bg,
+            "surface" => self.surface,
+            "ink" => self.ink,
+            "muted" => self.muted,
+            "hairline" => self.hairline,
+            "accent" => self.accent,
+            "success" => self.success,
+            "warn" => self.warn,
+            "danger" => self.danger,
+            _ => return None,
+        })
+    }
+
+    /// Set a token by its [`PALETTE_KEYS`] name; unknown keys are ignored.
+    pub fn set(&mut self, key: &str, c: Color) {
+        match key {
+            "bg" => self.bg = c,
+            "surface" => self.surface = c,
+            "ink" => self.ink = c,
+            "muted" => self.muted = c,
+            "hairline" => self.hairline = c,
+            "accent" => self.accent = c,
+            "success" => self.success = c,
+            "warn" => self.warn = c,
+            "danger" => self.danger = c,
+            _ => {}
+        }
+    }
+}
+
+/// The nine palette token names, in display order — for a theme editor's UI rows
+/// and for serializing the `[ui]` table.
+pub const PALETTE_KEYS: &[&str] = &[
+    "bg", "surface", "ink", "muted", "hairline", "accent", "success", "warn", "danger",
+];
+
+/// Parse `#rrggbb` or `#rrggbbaa` into a [`Color`]. The inverse of [`color_hex`].
+pub fn parse_color(s: &str) -> Option<Color> {
+    let s = s.strip_prefix('#')?;
+    let byte = |i: usize| u8::from_str_radix(s.get(i..i + 2)?, 16).ok();
+    match s.len() {
+        6 => Some(Color::from_rgb8(byte(0)?, byte(2)?, byte(4)?)),
+        8 => Some(Color::from_rgba8(byte(0)?, byte(2)?, byte(4)?, byte(6)? as f32 / 255.0)),
+        _ => None,
+    }
+}
+
+/// Format a [`Color`] as `#rrggbb` (opaque) or `#rrggbbaa` (with alpha). The
+/// inverse of [`parse_color`].
+pub fn color_hex(c: Color) -> String {
+    let q = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let (r, g, b, a) = (q(c.r), q(c.g), q(c.b), q(c.a));
+    if a == 255 {
+        format!("#{r:02x}{g:02x}{b:02x}")
+    } else {
+        format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
     }
 }
 
