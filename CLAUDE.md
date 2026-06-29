@@ -13,6 +13,12 @@ Rust GUIs.
 `README.md` is the user-facing pitch + quickstart. `COMPONENTS.md` is the contract
 for adding a component — **read it before adding one.**
 
+**iced is pinned at 0.14.** Before writing widget/app iced code, read
+[`ICED.md`](./ICED.md) — the patterns & gotchas (custom-`Widget` skeleton,
+`application` boot fn, `Quad.snap`, `Text` `align_x/y`, `Space` builder, focus,
+subscriptions, the 0.13→0.14 diff). Don't re-derive usage; consult it (and append
+to it on the next version bump).
+
 ## Map
 
 One crate, two modules.
@@ -23,10 +29,20 @@ One crate, two modules.
   (`DRACULA`/`GITHUB`), `ThemeChoice`, parameterized persistence (`load`/`save`
   take the path — the *host* owns where), and the style functions
   (`rounded`/`input_style`/`pick_style`/`editor_style`). Split across
-  `theme/{mod,palettes,style}.rs`.
+  `theme/{mod,palettes,style,registry}.rs`. `theme` also carries the domain-free
+  theming *machinery* a multi-theme app needs: `parse_color`/`color_hex`,
+  `Palette::color`/`set` + `PALETTE_KEYS`, and `registry.rs`'s generic
+  `ThemeRegistry<T>` + `NamedTheme` trait (built-ins + user TOML themes in a
+  host-owned dir; (de)serialization delegated to the app). Domain colors
+  themselves (editor caret, syntax) stay in the *app*, never here.
 - `widgets` — one primitive per file (`button`, `card`, `input`, `pill`, `stat`,
-  `field`, `header`, `section`, `chart`/`line_chart`, `select`, `tooltip`), each
-  generic over the message type, stateless, drawing from `theme::tokens()`.
+  `status_bar`, `field`/`labeled`, `header`, `section`, `chart`/`line_chart`,
+  `select`, `color_field`, `tooltip`, `toggle`, `stepper`, `modal`, `dialog`,
+  `banner`, `context_menu`, `menu` (`menu_bar` + `Submenu` flyouts), `tabs`,
+  `settings`), each generic over the message type, stateless, drawing from
+  `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless
+  too: the host owns open-menu / active-tab / hovered / active-section state and
+  passes it in, so one component backs several apps.
 
 `iced` is re-exported at the crate root (`rime::iced`) so dependents share one
 version.

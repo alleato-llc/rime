@@ -53,11 +53,38 @@ choose where the choice persists (`theme::load` / `theme::save` take the path).
 The token *vocabulary* is fixed: that is exactly what lets a component render
 correctly under any palette.
 
+### Beyond the palette: a user-theme registry
+
+For an app that ships several named themes and lets users add their own, `theme`
+also provides the domain-free *machinery* so you don't reinvent it:
+
+- `parse_color` / `color_hex` — `#rrggbb`(`aa`) ↔ `Color`.
+- `Palette::color(key)` / `set(key, c)` + `PALETTE_KEYS` — read/write tokens by name
+  (for a theme-editor's rows and `[ui]` serialization).
+- `ThemeRegistry<T>` + the `NamedTheme` trait — built-ins plus user themes saved as
+  TOML in a directory *you* own: list, resolve-by-name, save/delete/import/export,
+  `is_builtin`. It delegates parsing (a `parse` fn you pass) and serialization
+  (`NamedTheme::to_toml`) to you, so it's generic over *your* theme type — whether
+  that's a palette plus syntax colors, or just a palette.
+
 ## Components
 
-`button` (primary/secondary/danger/ghost), `card`, `text_field`, `labeled`,
-`select` (dropdown), `header_row`, `pill`, `section`, `stat`, `line_chart`, and
-`tooltip`. See them all on one screen:
+**Primitives** — `button` (primary/secondary/danger/ghost), `card`, `text_field`,
+`labeled`, `select` (dropdown), `color_field` (swatch + hex readout + R/G/B/A
+sliders), `header_row`, `pill`, `section`, `stat`, `status_bar` (left/right footer
+bar), `line_chart`, `tooltip`, `toggle` (switch row), `stepper` (− value +).
+
+**Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
+message + action-button row — the alert/confirm shape), `banner` (dismissible
+notification strip), `context_menu` (right-click popup, floated at a point),
+`menu_bar` (top-level dropdown menus with optional submenu flyouts), `tabs`
+(document tab strip with hover-reveal close + background-press hook), and
+`settings` (a left-rail section shell apps fill with their own controls, with an
+optional pinned footer slot).
+
+These are stateless: the host owns selection / open / hover / active state and
+passes it in, so the same component backs multiple apps. See them all on one
+screen:
 
 ```sh
 cargo run -p rime-demo
