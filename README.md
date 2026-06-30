@@ -76,14 +76,17 @@ also provides the domain-free *machinery* so you don't reinvent it:
 **Primitives** — `button` (primary/secondary/danger/ghost), `card`, `text_field`,
 `labeled`, `select` (dropdown), `slider` (labelled value slider with a readout),
 `color_field` (swatch + hex readout + R/G/B/A sliders), `header_row`, `pill`,
-`section`, `stat`, `status_bar` (left/right footer bar), `line_chart`, `tooltip`,
-`toggle` (switch row), `stepper` (− value +).
+`section`, `caption` (muted sub-heading), `shortcut_row` (chord + description
+reference row), `stat`, `status_bar` (left/right footer bar), `line_chart`,
+`tooltip`, `toggle` (switch row), `stepper` (− value +).
 
 **Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
 message + action-button row — the alert/confirm shape), `banner` (dismissible
 notification strip), `context_menu` (right-click popup, floated at a point),
 `menu_bar` (top-level dropdown menus with optional submenu flyouts), `tabs`
-(document tab strip with hover-reveal close + background-press hook), and
+(document tab strip with hover-reveal close + background-press hook), `title_strip`
+(tab-bar-height header band: label + trailing controls) and `window_shell`
+(title_strip + body + status_bar — the chrome of a torn-off / detached window), and
 `settings` (a left-rail section shell apps fill with their own controls, with an
 optional pinned footer slot).
 

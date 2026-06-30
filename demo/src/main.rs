@@ -11,8 +11,8 @@ use iced::widget::{column, row, Space};
 use iced::{Element, Length, Theme};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    button, card, header_row, labeled, line_chart, pill, section, slider, stat, text_field,
-    tooltip, LineChart, Series, TooltipPosition,
+    button, caption, card, header_row, labeled, line_chart, pill, section, shortcut_row, slider,
+    stat, text_field, title_strip, tooltip, window_shell, LineChart, Series, TooltipPosition,
 };
 
 #[derive(Default)]
@@ -99,6 +99,26 @@ impl Gallery {
                     stat("rps", "1.2k".to_string()),
                 ]
                 .spacing(32),
+                section("Shortcuts"),
+                caption("BINDINGS"),
+                shortcut_row("⌘T / ⌘N", "New tab"),
+                shortcut_row("⌥⌘ + arrows", "Split the focused pane"),
+                shortcut_row("right-click / ⌃-click", "Context menu"),
+                section("Window shell"),
+                iced::widget::container(title_strip(
+                    "title_strip.rs",
+                    vec![button::ghost("Reattach", Message::Noop).into()],
+                ))
+                .width(Length::Fill),
+                iced::widget::container(window_shell(
+                    "detached.rs",
+                    vec![button::ghost("Reattach", Message::Noop).into()],
+                    iced::widget::container(iced::widget::text("…window body…").color(t.muted),)
+                        .padding(12),
+                    "detached.rs",
+                    "120×40",
+                ))
+                .height(Length::Fixed(160.0)),
                 section("Chart"),
                 line_chart(
                     LineChart {

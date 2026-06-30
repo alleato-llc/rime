@@ -7,6 +7,23 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`window_shell` + `title_strip` widgets** (`shell` module) — chrome for a
+  torn-off / secondary window: `title_strip(label, controls)` is a surface band at
+  `TAB_BAR_HEIGHT` (label left, trailing controls right) that lines up with the main
+  window's tab strip; `window_shell(title, controls, body, status_left, status_right)`
+  stacks that strip over a body and a `status_bar` footer on the window background.
+  Extracted from three near-identical hand-rolled copies — tty's detached terminal
+  window and fed-ide's detached **editor** and **terminal** windows — which had begun
+  to drift (strip height/padding). Shown in `rime-demo`.
+- **`shortcut_row` widget** (`shortcut` module) — `shortcut_row(keys, description)`:
+  a fixed-width monospace chord cell beside a muted description, for keyboard-shortcut
+  reference lists. Replaces copy-pasted `chord | description` rows in tty's keys panel
+  and fed's / fed-ide's keymap settings (which had drifted to 150- vs 160-px gutters).
+  Shown in `rime-demo`.
+- **`caption` widget** (`section` module) — `caption(label)`: a muted 11px
+  sub-heading, the small group label above settings rows. Replaces the `section_label`
+  helper hand-rolled identically in both `fed` and `fed-ide` (rime's `section` is a
+  larger inked heading, a different visual). Shown in `rime-demo`.
 - **`tabs` `TabBarStyle` parameter** — `tabs(…, style: TabBarStyle)` takes a
   host-tunable `TabBarStyle { highlight_active, text_size }` (`Default` = the prior
   look: accent-inked active tab, 13px labels). `highlight_active: false` swaps the
