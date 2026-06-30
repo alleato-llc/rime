@@ -234,7 +234,13 @@ mod tests {
 
         // A user file named like the built-in shadows it (no duplicate name).
         r.save(&Mini("Base".into())).unwrap();
-        assert_eq!(r.names().iter().filter(|n| n.eq_ignore_ascii_case("base")).count(), 1);
+        assert_eq!(
+            r.names()
+                .iter()
+                .filter(|n| n.eq_ignore_ascii_case("base"))
+                .count(),
+            1
+        );
 
         // Deleting the override leaves the built-in resolvable + listed.
         r.delete("Base").unwrap();

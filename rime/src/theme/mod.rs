@@ -116,7 +116,12 @@ pub fn parse_color(s: &str) -> Option<Color> {
     let byte = |i: usize| u8::from_str_radix(s.get(i..i + 2)?, 16).ok();
     match s.len() {
         6 => Some(Color::from_rgb8(byte(0)?, byte(2)?, byte(4)?)),
-        8 => Some(Color::from_rgba8(byte(0)?, byte(2)?, byte(4)?, byte(6)? as f32 / 255.0)),
+        8 => Some(Color::from_rgba8(
+            byte(0)?,
+            byte(2)?,
+            byte(4)?,
+            byte(6)? as f32 / 255.0,
+        )),
         _ => None,
     }
 }

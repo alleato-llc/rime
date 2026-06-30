@@ -103,7 +103,13 @@ pub fn settings<'a, M: Clone + 'a>(
         .height(Length::Fill)
         .padding(MARGIN)
         .style(|_| container::Style {
-            background: Some(Color { a: 0.45, ..Color::BLACK }.into()),
+            background: Some(
+                Color {
+                    a: 0.45,
+                    ..Color::BLACK
+                }
+                .into(),
+            ),
             ..Default::default()
         });
 

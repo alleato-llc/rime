@@ -11,20 +11,22 @@ use iced::widget::{column, row, Space};
 use iced::{Element, Length, Theme};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    button, card, header_row, labeled, line_chart, pill, section, stat, text_field, tooltip,
-    LineChart, Series, TooltipPosition,
+    button, card, header_row, labeled, line_chart, pill, section, slider, stat, text_field,
+    tooltip, LineChart, Series, TooltipPosition,
 };
 
 #[derive(Default)]
 struct Gallery {
     choice: ThemeChoice,
     name: String,
+    amount: f32,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
     ToggleTheme,
     Name(String),
+    Amount(f32),
     Noop,
 }
 
@@ -33,6 +35,7 @@ impl Gallery {
         match message {
             Message::ToggleTheme => self.choice = self.choice.toggled(),
             Message::Name(s) => self.name = s,
+            Message::Amount(v) => self.amount = v,
             Message::Noop => {}
         }
     }
@@ -81,6 +84,14 @@ impl Gallery {
                 .spacing(8),
                 section("Field + input"),
                 labeled("Name", text_field("type here…", &self.name, Message::Name)),
+                section("Slider"),
+                slider(
+                    "Amount",
+                    0.0..=1.0,
+                    self.amount,
+                    format!("{}%", (self.amount * 100.0).round() as i32),
+                    Message::Amount,
+                ),
                 section("Stats"),
                 row![
                     stat("p50", "12 ms".to_string()),

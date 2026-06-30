@@ -209,7 +209,8 @@ pub fn menu_bar<'a, M: Clone + 'a>(
     let backdrop = column![
         Space::new().height(Length::Fixed(BAR_HEIGHT)),
         opaque(
-            mouse_area(Space::new().width(Length::Fill).height(Length::Fill)).on_press(on_toggle(None))
+            mouse_area(Space::new().width(Length::Fill).height(Length::Fill))
+                .on_press(on_toggle(None))
         ),
     ];
     let base_x = idx as f32 * MENU_WIDTH;

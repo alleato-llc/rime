@@ -14,15 +14,18 @@ pub fn toggle<'a, M: Clone + 'a>(label: &str, value: bool, on_toggle: M) -> Elem
 
     // The switch: a rounded track with a knob pushed to one side by a flexible
     // spacer (no pixel math — alignment does the work).
-    let knob = container(Space::new().width(Length::Fixed(14.0)).height(Length::Fixed(14.0))).style(move |_| {
-        container::Style {
-            background: Some(p.bg.into()),
-            border: Border {
-                radius: 7.0.into(),
-                ..Default::default()
-            },
+    let knob = container(
+        Space::new()
+            .width(Length::Fixed(14.0))
+            .height(Length::Fixed(14.0)),
+    )
+    .style(move |_| container::Style {
+        background: Some(p.bg.into()),
+        border: Border {
+            radius: 7.0.into(),
             ..Default::default()
-        }
+        },
+        ..Default::default()
     });
     let track_inner = if value {
         row![Space::new().width(Length::Fill), knob]

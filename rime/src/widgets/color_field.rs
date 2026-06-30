@@ -18,12 +18,19 @@ where
 {
     let p = tokens();
 
-    let swatch = container(Space::new().width(Length::Fixed(22.0)).height(Length::Fixed(22.0))).style(move |_| {
-        container::Style::default().background(color).border(Border {
-            color: p.hairline,
-            width: 1.0,
-            radius: 4.0.into(),
-        })
+    let swatch = container(
+        Space::new()
+            .width(Length::Fixed(22.0))
+            .height(Length::Fixed(22.0)),
+    )
+    .style(move |_| {
+        container::Style::default()
+            .background(color)
+            .border(Border {
+                color: p.hairline,
+                width: 1.0,
+                radius: 4.0.into(),
+            })
     });
 
     let channel =
@@ -42,7 +49,10 @@ where
         };
 
     row![
-        text(label).size(13).color(p.ink).width(Length::Fixed(150.0)),
+        text(label)
+            .size(13)
+            .color(p.ink)
+            .width(Length::Fixed(150.0)),
         swatch,
         text(hex_of(color))
             .size(12)

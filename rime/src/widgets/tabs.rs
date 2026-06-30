@@ -97,11 +97,12 @@ pub fn tabs<'a, M: Clone + 'a>(
     // horizontal scrollable lets it overflow by scrolling rather than squeezing the
     // last tab until its label wraps. A thin scrollbar keeps the bar slim.
     let strip = strip.align_y(iced::Alignment::Center);
-    let scroller = scrollable(strip)
-        .width(Length::Fill)
-        .direction(scrollable::Direction::Horizontal(
-            scrollable::Scrollbar::new().width(4).scroller_width(4),
-        ));
+    let scroller =
+        scrollable(strip)
+            .width(Length::Fill)
+            .direction(scrollable::Direction::Horizontal(
+                scrollable::Scrollbar::new().width(4).scroller_width(4),
+            ));
 
     // The scrollable fills the bar width, so a press in the empty area past the last
     // tab (when they don't fill it) bubbles to this mouse_area — the host's cue to
