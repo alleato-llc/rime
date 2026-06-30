@@ -40,6 +40,27 @@ impl Tab {
     }
 }
 
+/// Host-tunable look for the tab strip. Everything else stays palette-driven; these
+/// are the knobs an app may want to vary (e.g. expose as a setting). `default()` is the
+/// standard look: the active tab inked with the accent, 13px labels.
+#[derive(Debug, Clone, Copy)]
+pub struct TabBarStyle {
+    /// Ink the active tab with the accent (`true`) or with normal ink (`false`, a
+    /// subtler emphasis — it still reads as active versus the muted inactive tabs).
+    pub highlight_active: bool,
+    /// Tab label text size, in logical pixels.
+    pub text_size: f32,
+}
+
+impl Default for TabBarStyle {
+    fn default() -> Self {
+        Self {
+            highlight_active: true,
+            text_size: 13.0,
+        }
+    }
+}
+
 /// A strip of `tabs` with the `active` one highlighted. `on_activate(i)` fires
 /// when a tab body is clicked; `on_close(i)` when its close button is clicked. The
 /// close button is shown only on the `hovered` tab; `on_hover(Some(i))` fires when
@@ -57,6 +78,7 @@ pub fn tabs<'a, M: Clone + 'a>(
     on_hover: impl Fn(Option<usize>) -> M + 'a,
     on_right_press: impl Fn(usize) -> M + 'a,
     on_background_press: M,
+    style: TabBarStyle,
 ) -> Element<'a, M> {
     let p = tokens();
 
@@ -67,12 +89,25 @@ pub fn tabs<'a, M: Clone + 'a>(
         } else {
             tab.label
         };
-        let color = if i == active { p.accent } else { p.muted };
+        let color = if i == active {
+            if style.highlight_active {
+                p.accent
+            } else {
+                p.ink
+            }
+        } else {
+            p.muted
+        };
 
-        let body = button(text(label).size(13).color(color).font(Font::MONOSPACE))
-            .on_press(on_activate(i))
-            .style(button::text)
-            .padding([4, 8]);
+        let body = button(
+            text(label)
+                .size(style.text_size)
+                .color(color)
+                .font(Font::MONOSPACE),
+        )
+        .on_press(on_activate(i))
+        .style(button::text)
+        .padding([4, 8]);
         // The close affordance only appears on the hovered tab; otherwise it's a
         // fixed-width spacer so tabs don't jump as the pointer moves across them.
         let close: Element<'a, M> = if hovered == Some(i) {

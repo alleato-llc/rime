@@ -7,6 +7,12 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`tabs` `TabBarStyle` parameter** — `tabs(…, style: TabBarStyle)` takes a
+  host-tunable `TabBarStyle { highlight_active, text_size }` (`Default` = the prior
+  look: accent-inked active tab, 13px labels). `highlight_active: false` swaps the
+  accent for normal ink (a subtler active emphasis); `text_size` sizes the labels.
+  tty exposes the highlight as a setting and uses 12px tabs. **Breaking:** existing
+  call sites must pass a `TabBarStyle` (use `TabBarStyle::default()` to keep the look).
 - **`slider` widget** — a labelled value slider with a right-aligned readout
   (`slider(label, range, value, readout, on_change)`). It sets an explicit
   hundredth-of-range `.step()` so a fractional `0.0..=1.0` range is fully
