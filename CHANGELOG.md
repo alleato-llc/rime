@@ -7,6 +7,17 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`slider` widget** — a labelled value slider with a right-aligned readout
+  (`slider(label, range, value, readout, on_change)`). It sets an explicit
+  hundredth-of-range `.step()` so a fractional `0.0..=1.0` range is fully
+  draggable (iced's default integer step otherwise snaps such a range to its
+  endpoints). tty's unfocused-transparency control uses it. Shown in `rime-demo`.
+- **Shared built-in palette catalog** (`theme` module) — named chrome-palette
+  consts `DRACULA`, `NORD`, `GRUVBOX_DARK`, `SOLARIZED_DARK`, `SOLARIZED_LIGHT`,
+  `GITHUB`, `NEON_NIGHTS`, `PHOSPHOR`, plus `builtin_themes()` returning the
+  canonical ordered set. This makes the palette catalog the single source of truth
+  so `fed` (`patina`) and `tty` present one identical theme list instead of each
+  maintaining its own.
 - **Theming machinery beyond the palette** (`theme` module), so a second GUI
   doesn't reinvent it — extracted from fed's `patina` when a second consumer
   appeared:

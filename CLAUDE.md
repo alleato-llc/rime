@@ -37,7 +37,7 @@ One crate, two modules.
   themselves (editor caret, syntax) stay in the *app*, never here.
 - `widgets` — one primitive per file (`button`, `card`, `input`, `pill`, `stat`,
   `status_bar`, `field`/`labeled`, `header`, `section`, `chart`/`line_chart`,
-  `select`, `color_field`, `tooltip`, `toggle`, `stepper`, `modal`, `dialog`,
+  `select`, `slider`, `color_field`, `tooltip`, `toggle`, `stepper`, `modal`, `dialog`,
   `banner`, `context_menu`, `menu` (`menu_bar` + `Submenu` flyouts), `tabs`,
   `settings`), each generic over the message type, stateless, drawing from
   `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless

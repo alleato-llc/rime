@@ -66,13 +66,18 @@ also provides the domain-free *machinery* so you don't reinvent it:
   `is_builtin`. It delegates parsing (a `parse` fn you pass) and serialization
   (`NamedTheme::to_toml`) to you, so it's generic over *your* theme type — whether
   that's a palette plus syntax colors, or just a palette.
+- `builtin_themes()` + the named palette consts (`DRACULA`, `NORD`, `GRUVBOX_DARK`,
+  `SOLARIZED_DARK`, `SOLARIZED_LIGHT`, `GITHUB`, `NEON_NIGHTS`, `PHOSPHOR`) — the
+  canonical chrome-palette catalog shared by every consumer, so `fed` and `tty` offer
+  one identical theme list instead of each maintaining its own.
 
 ## Components
 
 **Primitives** — `button` (primary/secondary/danger/ghost), `card`, `text_field`,
-`labeled`, `select` (dropdown), `color_field` (swatch + hex readout + R/G/B/A
-sliders), `header_row`, `pill`, `section`, `stat`, `status_bar` (left/right footer
-bar), `line_chart`, `tooltip`, `toggle` (switch row), `stepper` (− value +).
+`labeled`, `select` (dropdown), `slider` (labelled value slider with a readout),
+`color_field` (swatch + hex readout + R/G/B/A sliders), `header_row`, `pill`,
+`section`, `stat`, `status_bar` (left/right footer bar), `line_chart`, `tooltip`,
+`toggle` (switch row), `stepper` (− value +).
 
 **Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
 message + action-button row — the alert/confirm shape), `banner` (dismissible
