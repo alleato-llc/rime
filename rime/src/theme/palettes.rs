@@ -83,9 +83,36 @@ pub const GRUVBOX_DARK: Palette = Palette {
     danger: Color::from_rgb8(0xfb, 0x49, 0x34),
 };
 
+/// Neon Nights — an 80s synthwave theme (deep violet night, hot-pink/cyan accents).
+pub const NEON_NIGHTS: Palette = Palette {
+    bg: Color::from_rgb8(0x26, 0x23, 0x35),
+    surface: Color::from_rgb8(0x2a, 0x21, 0x39),
+    ink: Color::from_rgb8(0xf9, 0xf2, 0xff),
+    muted: Color::from_rgb8(0x84, 0x8b, 0xbd),
+    hairline: Color::from_rgb8(0x39, 0x2c, 0x55),
+    accent: Color::from_rgb8(0xff, 0x7e, 0xdb),
+    success: Color::from_rgb8(0x72, 0xf1, 0xb8),
+    warn: Color::from_rgb8(0xfe, 0xde, 0x5d),
+    danger: Color::from_rgb8(0xfe, 0x44, 0x50),
+};
+
+/// Phosphor — a green-phosphor CRT base on near-black, lit by amber/cyan accents.
+pub const PHOSPHOR: Palette = Palette {
+    bg: Color::from_rgb8(0x04, 0x08, 0x05),
+    surface: Color::from_rgb8(0x0a, 0x14, 0x0b),
+    ink: Color::from_rgb8(0x3d, 0xf0, 0x6a),
+    muted: Color::from_rgb8(0x1f, 0x8a, 0x3a),
+    hairline: Color::from_rgb8(0x12, 0x3a, 0x1e),
+    accent: Color::from_rgb8(0x5d, 0xff, 0x8a),
+    success: Color::from_rgb8(0x5d, 0xff, 0x8a),
+    warn: Color::from_rgb8(0xd6, 0xc3, 0x4a),
+    danger: Color::from_rgb8(0xff, 0x5c, 0x5c),
+};
+
 /// The built-in named palettes rime ships, in display order: `(name, palette,
-/// is_dark)`. The shared source of truth for app chrome — `tty` lists these in its
-/// theme picker and `patina` builds its richer editor themes on the matching ones.
+/// is_dark)`. The single source of truth for the app theme *catalog* — both `tty`
+/// (its theme picker) and fed's `patina` (which adds editor + syntax on top) offer
+/// exactly this set, so the sibling products show the same menu.
 pub fn builtin_themes() -> &'static [(&'static str, Palette, bool)] {
     &[
         ("Dracula", DRACULA, true),
@@ -93,6 +120,8 @@ pub fn builtin_themes() -> &'static [(&'static str, Palette, bool)] {
         ("Gruvbox Dark", GRUVBOX_DARK, true),
         ("Solarized Dark", SOLARIZED_DARK, true),
         ("Solarized Light", SOLARIZED_LIGHT, false),
-        ("GitHub", GITHUB, false),
+        ("GitHub Light", GITHUB, false),
+        ("Neon Nights", NEON_NIGHTS, true),
+        ("Phosphor", PHOSPHOR, true),
     ]
 }
