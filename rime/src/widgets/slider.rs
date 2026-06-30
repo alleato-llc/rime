@@ -24,12 +24,16 @@ where
     F: Fn(f32) -> M + 'a,
 {
     let p = tokens();
+    // A continuous control: default to ~1% granularity across the range. (iced's
+    // slider defaults to a step of 1.0, which would snap a 0..=1 range to just its
+    // endpoints — only the readout would ever read 0% or 100%.)
+    let step = ((range.end() - range.start()) / 100.0).max(f32::MIN_POSITIVE);
     row![
         text(label)
             .size(13)
             .color(p.ink)
             .width(Length::Fixed(170.0)),
-        islider(range, value, on_change),
+        islider(range, value, on_change).step(step),
         text(readout.into())
             .size(12)
             .color(p.muted)
