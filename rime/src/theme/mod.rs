@@ -21,7 +21,9 @@ mod palettes;
 mod registry;
 mod style;
 
-pub use palettes::{DRACULA, GITHUB};
+pub use palettes::{
+    builtin_themes, DRACULA, GITHUB, GRUVBOX_DARK, NORD, SOLARIZED_DARK, SOLARIZED_LIGHT,
+};
 pub use registry::{NamedTheme, ThemeRegistry};
 pub use style::{editor_style, input_style, pick_style, rounded};
 
