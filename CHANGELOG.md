@@ -7,6 +7,11 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Changed
+- **`tabs` opens a new tab on a *double*-click of the empty bar area**, not a single
+  click — `on_background_press` now fires from the wrapping `mouse_area`'s
+  `on_double_click`, matching the widget's long-documented intent so a stray single
+  click never spawns a tab. Consumers that had hand-rolled their own double-click
+  timing on top of the single-press signal (fed / fed-ide) can drop it.
 - **`tabs` activates on press, not release** — each tab body is now a plain container
   and the wrapping `mouse_area`'s `on_press` fires `on_activate(i)` on mouse-*down*
   (an iced `button` only reports on mouse-*up*). This lets a host begin a drag gesture

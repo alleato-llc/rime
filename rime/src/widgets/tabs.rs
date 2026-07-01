@@ -66,8 +66,9 @@ impl Default for TabBarStyle {
 /// or reorder — from the press); `on_close(i)` when its close button is clicked. The
 /// close button is shown only on the `hovered` tab; `on_hover(Some(i))` fires when
 /// the pointer enters tab `i` and `on_hover(None)` when it leaves the strip.
-/// `on_background_press` fires when the empty area past the last tab is clicked
-/// (hosts typically treat a double-click there as "new tab"). `on_right_press(i)`
+/// `on_background_press` fires on a **double-click** of the empty area past the last
+/// tab — the standard "new tab" gesture, so a stray single click never spawns one.
+/// `on_right_press(i)`
 /// fires on a secondary click on tab `i` (hosts open a context menu).
 #[allow(clippy::too_many_arguments)]
 pub fn tabs<'a, M: Clone + 'a>(
@@ -145,11 +146,12 @@ pub fn tabs<'a, M: Clone + 'a>(
             ));
 
     // The scrollable fills the bar width, so a press in the empty area past the last
-    // tab (when they don't fill it) bubbles to this mouse_area — the host's cue to
-    // open a new tab — while tab buttons capture their own clicks.
+    // tab (when they don't fill it) bubbles to this mouse_area. A *double*-click there
+    // is the host's cue to open a new tab — a single stray click does nothing — while
+    // tab bodies capture their own presses.
     container(
         mouse_area(scroller)
-            .on_press(on_background_press)
+            .on_double_click(on_background_press)
             .on_exit(on_hover(None)),
     )
     .width(Length::Fill)
