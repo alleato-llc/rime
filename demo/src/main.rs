@@ -86,7 +86,13 @@ impl Gallery {
                 section("Field + input"),
                 labeled("Name", text_field("type here…", &self.name, Message::Name)),
                 section("Rename bar"),
-                rename_bar("Rename tab", "Tab name…", &self.name, Message::Name, Message::Noop),
+                rename_bar(
+                    "Rename tab",
+                    "Tab name…",
+                    &self.name,
+                    Message::Name,
+                    Message::Noop
+                ),
                 section("Slider"),
                 slider(
                     "Amount",

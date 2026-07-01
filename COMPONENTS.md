@@ -46,6 +46,11 @@ cargo run -p rime-demo        # look at it on both themes
 The demo has a theme toggle: confirm the component re-colors correctly from the
 palette alone (no hardcoded colors leaked).
 
+**No inline test modules.** If a module `foo.rs` needs unit tests, put them in a
+sibling `foo_tests.rs` and wire it up with `#[cfg(test)] #[path = "foo_tests.rs"] mod
+tests;` (the test file opens `use super::*;`). Don't write `#[cfg(test)] mod tests
+{ … }` inline in a source file — same rule as fed and tty.
+
 ## Worked example: a `tree`
 
 Say you want a collapsible tree.
