@@ -6,4 +6,4 @@ members = ["rime", "demo"]
 
 # iced is shared by the kit and the demo; pin it once so they never drift.
 [workspace.dependencies]
-iced = { version = "0.14", features = ["canvas"] }
+iced = { version = "0.14", features = ["canvas", "advanced"] }

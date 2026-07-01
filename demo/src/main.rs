@@ -11,8 +11,9 @@ use iced::widget::{column, row, Space};
 use iced::{Element, Length, Theme};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    button, caption, card, header_row, labeled, line_chart, pill, section, shortcut_row, slider,
-    stat, text_field, title_strip, tooltip, window_shell, LineChart, Series, TooltipPosition,
+    button, caption, card, header_row, labeled, line_chart, pill, rename_bar, section,
+    shortcut_row, slider, stat, text_field, title_strip, tooltip, window_shell, LineChart, Series,
+    TooltipPosition,
 };
 
 #[derive(Default)]
@@ -84,6 +85,8 @@ impl Gallery {
                 .spacing(8),
                 section("Field + input"),
                 labeled("Name", text_field("type here…", &self.name, Message::Name)),
+                section("Rename bar"),
+                rename_bar("Rename tab", "Tab name…", &self.name, Message::Name, Message::Noop),
                 section("Slider"),
                 slider(
                     "Amount",

@@ -62,7 +62,8 @@ impl Default for TabBarStyle {
 }
 
 /// A strip of `tabs` with the `active` one highlighted. `on_activate(i)` fires
-/// when a tab body is clicked; `on_close(i)` when its close button is clicked. The
+/// when a tab body is *pressed* (on mouse-down, so a host can begin a drag — tear-off
+/// or reorder — from the press); `on_close(i)` when its close button is clicked. The
 /// close button is shown only on the `hovered` tab; `on_hover(Some(i))` fires when
 /// the pointer enters tab `i` and `on_hover(None)` when it leaves the strip.
 /// `on_background_press` fires when the empty area past the last tab is clicked
@@ -99,14 +100,17 @@ pub fn tabs<'a, M: Clone + 'a>(
             p.muted
         };
 
-        let body = button(
+        // The tab body is a plain (non-interactive) container so it does *not* capture
+        // the press — activation is driven by the wrapping `mouse_area`'s `on_press`
+        // below, which fires on mouse-*down*. That early arm is what lets a host begin a
+        // drag (tear-off / reorder) on press; an iced `button` would only report on
+        // mouse-*up*, by which point the drag gesture is already over.
+        let body = container(
             text(label)
                 .size(style.text_size)
                 .color(color)
                 .font(Font::MONOSPACE),
         )
-        .on_press(on_activate(i))
-        .style(button::text)
         .padding([4, 8]);
         // The close affordance only appears on the hovered tab; otherwise it's a
         // fixed-width spacer so tabs don't jump as the pointer moves across them.
@@ -123,6 +127,7 @@ pub fn tabs<'a, M: Clone + 'a>(
         // reports the tab index (the host anchors a context menu there).
         strip = strip.push(
             mouse_area(Row::new().push(body).push(close))
+                .on_press(on_activate(i))
                 .on_enter(on_hover(Some(i)))
                 .on_right_press(on_right_press(i)),
         );

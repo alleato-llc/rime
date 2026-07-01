@@ -77,8 +77,9 @@ also provides the domain-free *machinery* so you don't reinvent it:
 `labeled`, `select` (dropdown), `slider` (labelled value slider with a readout),
 `color_field` (swatch + hex readout + R/G/B/A sliders), `header_row`, `pill`,
 `section`, `caption` (muted sub-heading), `shortcut_row` (chord + description
-reference row), `stat`, `status_bar` (left/right footer bar), `line_chart`,
-`tooltip`, `toggle` (switch row), `stepper` (− value +).
+reference row), `rename_bar` (inline "rename this tab" field), `stat`,
+`status_bar` (left/right footer bar), `line_chart`, `tooltip`, `toggle` (switch
+row), `stepper` (− value +).
 
 **Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
 message + action-button row — the alert/confirm shape), `banner` (dismissible

@@ -6,7 +6,22 @@ so current work lives under **Unreleased**.
 
 ## [Unreleased]
 
+### Changed
+- **`tabs` activates on press, not release** — each tab body is now a plain container
+  and the wrapping `mouse_area`'s `on_press` fires `on_activate(i)` on mouse-*down*
+  (an iced `button` only reports on mouse-*up*). This lets a host begin a drag gesture
+  from the press — tab **tear-off** and **reorder** both arm on press and had silently
+  no-op'd before, since the drag was only armed once the gesture had already ended. The
+  `×` close button still captures its own press, and the strip's background-press hook
+  is unchanged. No API or pixel change (container matches `button::text`).
+
 ### Added
+- **`rename_bar` widget** (`rename` module) — `rename_bar(caption, placeholder,
+  value, on_change, on_submit)`: an inline "rename this tab" field (muted caption
+  beside a focused `text_field` on the surface), plus `rename_field_id()` so the host
+  can focus it on open. Extracted from tty's hand-rolled rename bar so tty and
+  fed-ide's terminal-tab rename share one implementation. Enables the `advanced`
+  iced feature (for the field's `widget::Id`). Shown in `rime-demo`.
 - **`window_shell` + `title_strip` widgets** (`shell` module) — chrome for a
   torn-off / secondary window: `title_strip(label, controls)` is a surface band at
   `TAB_BAR_HEIGHT` (label left, trailing controls right) that lines up with the main
