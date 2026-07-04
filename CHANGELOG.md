@@ -93,8 +93,9 @@ so current work lives under **Unreleased**.
   `offset` and the selection are caller-owned inputs — the wheel reports a new clamped
   offset via `on_scroll`, a click reports `(row, col, extend)` via `on_select`
   (`extend` = shift held); only the live modifiers are tracked in widget state.
-  `GridMetrics` sets uniform cell/header sizes (per-column widths + resize-drag are a
-  planned extension on the same viewport math). Shown in `rime-demo` (a 200×26 table).
+  `Metrics` sets the default cell/header sizes (per-column widths + resize-drag
+  landed later on the same viewport math — see the entry above). Shown in
+  `rime-demo` (a 200×26 table).
   This is the grid the Rust/iced Soroban port needs; built here first, domain-free.
 - **`rename_bar` widget** (`rename` module) — `rename_bar(caption, placeholder,
   value, on_change, on_submit)`: an inline "rename this tab" field (muted caption

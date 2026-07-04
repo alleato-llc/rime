@@ -78,13 +78,19 @@ also provides the domain-free *machinery* so you don't reinvent it:
 `color_field` (swatch + hex readout + R/G/B/A sliders), `header_row`, `pill`,
 `section`, `caption` (muted sub-heading), `shortcut_row` (chord + description
 reference row), `rename_bar` (inline "rename this tab" field), `stat`,
-`status_bar` (left/right footer bar), `line_chart`, `tooltip`, `toggle` (switch
-row), `stepper` (− value +).
+`status_bar` (left/right footer bar), `line_chart`, `grid` (virtualized
+spreadsheet grid — frozen row/column headers, anchor+extent selection rectangles,
+a `fn(row, col) -> GridCell` factory, per-cell `Element` overlays for in-place
+editors/controls, double-click activation, and per-column widths with
+resize-drag), `bit_grid` (macOS-Calculator-style bit editor — labeled bit
+buttons, named field bands, enum pickers), `tooltip`, `toggle` (switch row),
+`stepper` (− value +).
 
 **Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
 message + action-button row — the alert/confirm shape), `banner` (dismissible
 notification strip), `context_menu` (right-click popup, floated at a point),
-`menu_bar` (top-level dropdown menus with optional submenu flyouts), `tabs`
+`menu_bar` (top-level dropdown menus with optional submenu flyouts, plus a
+`_with_trailing` variant that pins a toolbar item to the right of the bar), `tabs`
 (document tab strip with hover-reveal close + background-press hook), `title_strip`
 (tab-bar-height header band: label + trailing controls) and `window_shell`
 (title_strip + body + status_bar — the chrome of a torn-off / detached window), and
