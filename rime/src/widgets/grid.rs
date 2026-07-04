@@ -22,14 +22,20 @@
 //! do no allocation-heavy work there; a selection change repaints, it does not
 //! rebuild a widget tree; judge scrolling on `--release`.
 
+use std::time::Instant;
+
 use iced::advanced::layout::{Layout, Limits, Node};
 use iced::advanced::text::{self, Text};
-use iced::advanced::widget::{tree, Tree};
+use iced::advanced::widget::{tree, Operation, Tree};
 use iced::advanced::{renderer, Clipboard, Shell, Widget};
 use iced::{
     alignment, keyboard, mouse, Background, Border, Color, Element, Event, Length, Pixels, Point,
     Rectangle, Shadow, Size, Vector,
 };
+
+/// The window (in seconds) within which a second click on the same cell counts
+/// as a double-click and fires `on_activate` (inline edit), not another select.
+const DOUBLE_CLICK_SECS: f32 = 0.4;
 
 /// Horizontal alignment of a cell's text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -148,20 +154,34 @@ impl Default for Metrics {
 const TEXT_SIZE: f32 = 13.0;
 const CELL_PAD: f32 = 6.0;
 
-/// Widget-internal transient state: the live modifiers, so a mouse press knows
-/// whether shift is held (mouse events don't carry modifiers in iced).
+/// Widget-internal transient state: the live modifiers (so a mouse press knows
+/// whether shift is held — mouse events don't carry modifiers in iced) and the
+/// last click's time+cell, for double-click detection.
 #[derive(Default)]
 struct State {
     modifiers: keyboard::Modifiers,
+    last_click: Option<(Instant, usize, usize)>,
 }
 
 type CellFn<'a> = Box<dyn Fn(usize, usize) -> GridCell + 'a>;
 type ScrollFn<'a, Message> = Box<dyn Fn(Vector) -> Message + 'a>;
 type SelectFn<'a, Message> = Box<dyn Fn(usize, usize, bool) -> Message + 'a>;
+type ActivateFn<'a, Message> = Box<dyn Fn(usize, usize) -> Message + 'a>;
+
+/// An inline editor hosted over one cell: the widget lays it out on top of the
+/// cell at `(row, col)` and forwards it events/focus, so a cell can be edited
+/// in place (the host supplies a `text_input` or any element).
+struct CellEditor<'a, Message, Theme, Renderer> {
+    row: usize,
+    col: usize,
+    element: Element<'a, Message, Theme, Renderer>,
+}
 
 /// The grid widget. Build it with [`grid`] and chain the setters; it converts
-/// into an [`Element`] via `From`.
-pub struct Grid<'a, Message> {
+/// into an [`Element`] via `From`. The `Theme`/`Renderer` params carry the
+/// optional inline editor's element (they default to iced's, so the common
+/// leaf-grid call site is unchanged).
+pub struct Grid<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer> {
     rows: usize,
     cols: usize,
     cell: CellFn<'a>,
@@ -171,6 +191,8 @@ pub struct Grid<'a, Message> {
     palette: crate::theme::Palette,
     on_scroll: Option<ScrollFn<'a, Message>>,
     on_select: Option<SelectFn<'a, Message>>,
+    on_activate: Option<ActivateFn<'a, Message>>,
+    editor: Option<CellEditor<'a, Message, Theme, Renderer>>,
     width: Length,
     height: Length,
 }
@@ -178,11 +200,11 @@ pub struct Grid<'a, Message> {
 /// A virtualized grid of `rows`×`cols`, drawing each visible cell from
 /// `cell(row, col)`. Captures the palette at build time (per the rime rule),
 /// so its colors are fixed the moment `view()` runs.
-pub fn grid<'a, Message: 'a>(
+pub fn grid<'a, Message, Theme, Renderer>(
     rows: usize,
     cols: usize,
     cell: impl Fn(usize, usize) -> GridCell + 'a,
-) -> Grid<'a, Message> {
+) -> Grid<'a, Message, Theme, Renderer> {
     Grid {
         rows,
         cols,
@@ -193,12 +215,14 @@ pub fn grid<'a, Message: 'a>(
         palette: crate::theme::tokens(),
         on_scroll: None,
         on_select: None,
+        on_activate: None,
+        editor: None,
         width: Length::Fill,
         height: Length::Fill,
     }
 }
 
-impl<'a, Message> Grid<'a, Message> {
+impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
     pub fn metrics(mut self, metrics: Metrics) -> Self {
         self.metrics = metrics;
         self
@@ -227,6 +251,32 @@ impl<'a, Message> Grid<'a, Message> {
         self.on_select = Some(Box::new(f));
         self
     }
+
+    /// Fires `(row, col)` on a double-click — the host uses this to open an
+    /// inline editor over that cell (see [`Self::editor`]).
+    pub fn on_activate(mut self, f: impl Fn(usize, usize) -> Message + 'a) -> Self {
+        self.on_activate = Some(Box::new(f));
+        self
+    }
+
+    /// Host an inline editor `element` over the cell at `(row, col)` — the grid
+    /// lays it out on top of that cell and forwards it events + focus, so the
+    /// cell edits in place. Omit it (the default) for a read-only/point-select
+    /// grid.
+    pub fn editor(
+        mut self,
+        row: usize,
+        col: usize,
+        element: impl Into<Element<'a, Message, Theme, Renderer>>,
+    ) -> Self {
+        self.editor = Some(CellEditor {
+            row,
+            col,
+            element: element.into(),
+        });
+        self
+    }
+
 
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
@@ -282,7 +332,8 @@ impl<'a, Message> Grid<'a, Message> {
     }
 }
 
-impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer> for Grid<'_, Message>
+impl<Message, Theme, Renderer> Widget<Message, Theme, Renderer>
+    for Grid<'_, Message, Theme, Renderer>
 where
     Renderer: text::Renderer,
 {
@@ -294,12 +345,69 @@ where
         tree::State::new(State::default())
     }
 
+    fn children(&self) -> Vec<Tree> {
+        match &self.editor {
+            Some(editor) => vec![Tree::new(&editor.element)],
+            None => vec![],
+        }
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        match &self.editor {
+            Some(editor) => tree.diff_children(std::slice::from_ref(&editor.element)),
+            None => tree.diff_children(&[] as &[Element<'_, Message, Theme, Renderer>]),
+        }
+    }
+
     fn size(&self) -> Size<Length> {
         Size::new(self.width, self.height)
     }
 
-    fn layout(&mut self, _tree: &mut Tree, _renderer: &Renderer, limits: &Limits) -> Node {
-        Node::new(limits.resolve(self.width, self.height, Size::ZERO))
+    fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &Limits) -> Node {
+        let size = limits.resolve(self.width, self.height, Size::ZERO);
+        match &mut self.editor {
+            Some(editor) => {
+                let origin = grid_cell_origin(
+                    size,
+                    self.metrics,
+                    self.offset,
+                    self.rows,
+                    self.cols,
+                    editor.row,
+                    editor.col,
+                );
+                let cell_limits = Limits::new(
+                    Size::ZERO,
+                    Size::new(self.metrics.column_width, self.metrics.row_height),
+                );
+                let child = editor.element.as_widget_mut().layout(
+                    &mut tree.children[0],
+                    renderer,
+                    &cell_limits,
+                );
+                Node::with_children(size, vec![child.move_to(origin)])
+            }
+            None => Node::new(size),
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn Operation,
+    ) {
+        if let Some(editor) = &mut self.editor {
+            if let Some(child_layout) = layout.children().next() {
+                editor.element.as_widget_mut().operate(
+                    &mut tree.children[0],
+                    child_layout,
+                    renderer,
+                    operation,
+                );
+            }
+        }
     }
 
     fn update(
@@ -315,6 +423,28 @@ where
     ) {
         let bounds = layout.bounds();
         let body = self.body(bounds);
+
+        // The inline editor sees events first (typing, its own clicks). If it
+        // consumes one, the grid ignores it — so a click inside the editor never
+        // moves the selection.
+        if let Some(editor) = &mut self.editor {
+            if let Some(child_layout) = layout.children().next() {
+                editor.element.as_widget_mut().update(
+                    &mut tree.children[0],
+                    event,
+                    child_layout,
+                    cursor,
+                    _renderer,
+                    _clipboard,
+                    shell,
+                    _viewport,
+                );
+                if shell.is_event_captured() {
+                    return;
+                }
+            }
+        }
+
         let state = tree.state.downcast_mut::<State>();
 
         match event {
@@ -352,19 +482,35 @@ where
             }
 
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
-                let Some(on_select) = &self.on_select else {
-                    return;
-                };
                 let Some(position) = cursor.position_in(body) else {
                     return;
                 };
                 let offset = self.clamped_offset(body);
                 let col = ((position.x + offset.x) / self.metrics.column_width).floor() as usize;
                 let row = ((position.y + offset.y) / self.metrics.row_height).floor() as usize;
-                if row < self.rows && col < self.cols {
-                    shell.publish(on_select(row, col, state.modifiers.shift()));
-                    shell.request_redraw();
-                    shell.capture_event();
+                if row >= self.rows || col >= self.cols {
+                    return;
+                }
+                // A second click on the same cell within the window activates it
+                // (inline edit); otherwise it's a plain select.
+                let now = Instant::now();
+                let is_double = state.last_click.is_some_and(|(when, r, c)| {
+                    r == row && c == col && now.duration_since(when).as_secs_f32() < DOUBLE_CLICK_SECS
+                });
+                if is_double {
+                    state.last_click = None;
+                    if let Some(on_activate) = &self.on_activate {
+                        shell.publish(on_activate(row, col));
+                        shell.request_redraw();
+                        shell.capture_event();
+                    }
+                } else {
+                    state.last_click = Some((now, row, col));
+                    if let Some(on_select) = &self.on_select {
+                        shell.publish(on_select(row, col, state.modifiers.shift()));
+                        shell.request_redraw();
+                        shell.capture_event();
+                    }
                 }
             }
 
@@ -374,12 +520,26 @@ where
 
     fn mouse_interaction(
         &self,
-        _tree: &Tree,
+        tree: &Tree,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
-        _viewport: &Rectangle,
-        _renderer: &Renderer,
+        viewport: &Rectangle,
+        renderer: &Renderer,
     ) -> mouse::Interaction {
+        // Over the editor, defer to it (text I-beam); else the grid's cell cursor.
+        if let Some(editor) = &self.editor {
+            if let Some(child_layout) = layout.children().next() {
+                if cursor.is_over(child_layout.bounds()) {
+                    return editor.element.as_widget().mouse_interaction(
+                        &tree.children[0],
+                        child_layout,
+                        cursor,
+                        viewport,
+                        renderer,
+                    );
+                }
+            }
+        }
         if cursor.is_over(self.body(layout.bounds())) {
             mouse::Interaction::Cell
         } else {
@@ -389,13 +549,13 @@ where
 
     fn draw(
         &self,
-        _tree: &Tree,
+        tree: &Tree,
         renderer: &mut Renderer,
-        _theme: &Theme,
-        _style: &renderer::Style,
+        theme: &Theme,
+        style: &renderer::Style,
         layout: Layout<'_>,
-        _cursor: mouse::Cursor,
-        _viewport: &Rectangle,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
     ) {
         let bounds = layout.bounds();
         let body = self.body(bounds);
@@ -552,18 +712,61 @@ where
             height: metrics.header_height,
         };
         stroked(renderer, corner, palette.surface, palette.hairline);
+
+        // The inline editor, on top of everything, clipped to the body so it
+        // never spills into the header strips.
+        if let Some(editor) = &self.editor {
+            if let Some(child_layout) = layout.children().next() {
+                renderer.with_layer(body, |renderer| {
+                    editor.element.as_widget().draw(
+                        &tree.children[0],
+                        renderer,
+                        theme,
+                        style,
+                        child_layout,
+                        cursor,
+                        viewport,
+                    );
+                });
+            }
+        }
     }
 }
 
-impl<'a, Message, Theme, Renderer> From<Grid<'a, Message>> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message, Theme, Renderer> From<Grid<'a, Message, Theme, Renderer>>
+    for Element<'a, Message, Theme, Renderer>
 where
     Message: 'a,
     Theme: 'a,
     Renderer: text::Renderer + 'a,
 {
-    fn from(grid: Grid<'a, Message>) -> Self {
+    fn from(grid: Grid<'a, Message, Theme, Renderer>) -> Self {
         Element::new(grid)
     }
+}
+
+/// The `(row, col)` cell's top-left relative to the grid's own origin, for
+/// positioning the inline editor in `layout`. A free function (not a method) so
+/// it can be called while `self.editor` is mutably borrowed.
+fn grid_cell_origin(
+    size: Size,
+    metrics: Metrics,
+    offset: Vector,
+    rows: usize,
+    cols: usize,
+    row: usize,
+    col: usize,
+) -> Point {
+    let body_w = (size.width - metrics.header_width).max(0.0);
+    let body_h = (size.height - metrics.header_height).max(0.0);
+    let max_x = (cols as f32 * metrics.column_width - body_w).max(0.0);
+    let max_y = (rows as f32 * metrics.row_height - body_h).max(0.0);
+    let off_x = offset.x.clamp(0.0, max_x);
+    let off_y = offset.y.clamp(0.0, max_y);
+    Point::new(
+        metrics.header_width + col as f32 * metrics.column_width - off_x,
+        metrics.header_height + row as f32 * metrics.row_height - off_y,
+    )
 }
 
 /// Bijective base-26 column name: 0→A, 25→Z, 26→AA, …

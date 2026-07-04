@@ -6,6 +6,19 @@ so current work lives under **Unreleased**.
 
 ## [Unreleased]
 
+### Added
+- **`grid` inline cell editor + double-click activation.** The grid can now host
+  an editor element over one cell: `grid(…).editor(row, col, element)` lays the
+  element out on top of that cell and forwards it events, focus (`operate`), and
+  mouse-interaction, so a cell edits **in place** (the host passes a `text_input`
+  or any element; clicks inside the editor no longer move the selection). A new
+  `.on_activate(|row, col| …)` fires on a **double-click** (400ms window, tracked
+  in widget state), which hosts use to open that editor. The grid gained the
+  `Theme`/`Renderer` type params needed to hold a child element — they default to
+  iced's, so existing leaf-grid call sites (`grid(rows, cols, cell)`) are
+  unchanged. This is what the Rust/iced Soroban port needs for spreadsheet-style
+  in-cell editing; built here, domain-free.
+
 ### Changed
 - **`slider` takes an owned label (`impl Into<String>`)** instead of a borrowed
   `&'a str`, so a caller can pass a computed label (e.g. a control's name built
