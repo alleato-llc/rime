@@ -13,7 +13,7 @@ use crate::theme::tokens;
 /// A `label` + slider over `range` at `value`, with a right-aligned `readout`
 /// (e.g. `"60%"`). Dragging the handle emits `on_change` with the new value.
 pub fn slider<'a, M, F>(
-    label: &'a str,
+    label: impl Into<String>,
     range: RangeInclusive<f32>,
     value: f32,
     readout: impl Into<String>,
@@ -29,7 +29,7 @@ where
     // endpoints — only the readout would ever read 0% or 100%.)
     let step = ((range.end() - range.start()) / 100.0).max(f32::MIN_POSITIVE);
     row![
-        text(label)
+        text(label.into())
             .size(13)
             .color(p.ink)
             .width(Length::Fixed(170.0)),

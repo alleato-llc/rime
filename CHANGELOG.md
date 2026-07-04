@@ -7,6 +7,11 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Changed
+- **`slider` takes an owned label (`impl Into<String>`)** instead of a borrowed
+  `&'a str`, so a caller can pass a computed label (e.g. a control's name built
+  per frame) without fighting the returned element's lifetime — matching its
+  siblings `stepper`/`toggle`, which already own their labels. `&str` literals
+  still work unchanged.
 - **`tabs` opens a new tab on a *double*-click of the empty bar area**, not a single
   click — `on_background_press` now fires from the wrapping `mouse_area`'s
   `on_double_click`, matching the widget's long-documented intent so a stray single
