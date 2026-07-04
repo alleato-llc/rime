@@ -7,6 +7,17 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`grid` per-column widths + resize-drag.** `grid(…).column_widths(vec)`
+  overrides individual column widths (indexed by column; a short/absent/`0.0`
+  entry falls back to `metrics.column_width`), and `.on_resize_column(|col,
+  width| …)` fires while the user drags a column's right border in the header
+  strip — the pointer shows the ↔ resize cursor over a border, the drag reports
+  the new width already clamped to a 24px minimum, and the host stores it and
+  feeds it back through `column_widths`. All the virtualization math (visible
+  window, content size, hit-testing, overlay placement, header/selection
+  geometry) now runs off a prefix-sum over the per-column widths; with no
+  overrides it matches the old uniform arithmetic exactly. Built for the
+  Rust/iced Soroban port's spreadsheet, domain-free.
 - **`grid` hosted cell overlays + double-click activation.** The grid can host
   widgets over cells: `grid(…).overlay(row, col, element)` (called once per
   hosted cell; `.editor(…)` is an alias that reads clearly for the single
@@ -22,6 +33,9 @@ so current work lives under **Unreleased**.
   in-cell editing and inline controls; built here, domain-free.
 
 ### Changed
+- **`grid::Selection::bounds()` is now public** — the inclusive
+  `(row_min, row_max, col_min, col_max)` span (corners normalized), so a host
+  can read a selection's rectangle for copy/paste or fill operations.
 - **`slider` collapses its label gutter when the label is empty.** A non-empty
   label still reserves the fixed 170px gutter (so stacked sliders align); an
   empty label omits the gutter entirely, so the slider fits a tight space — e.g.
