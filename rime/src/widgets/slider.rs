@@ -28,18 +28,20 @@ where
     // slider defaults to a step of 1.0, which would snap a 0..=1 range to just its
     // endpoints — only the readout would ever read 0% or 100%.)
     let step = ((range.end() - range.start()) / 100.0).max(f32::MIN_POSITIVE);
-    row![
-        text(label.into())
-            .size(13)
-            .color(p.ink)
-            .width(Length::Fixed(170.0)),
-        islider(range, value, on_change).step(step),
-        text(readout.into())
-            .size(12)
-            .color(p.muted)
-            .width(Length::Fixed(48.0)),
-    ]
-    .spacing(10)
-    .align_y(Alignment::Center)
-    .into()
+    // The label reserves a fixed gutter so stacked sliders align — but only when
+    // there IS a label; an empty label collapses the gutter so the slider fits a
+    // tight space (e.g. hosted inside a spreadsheet cell).
+    let mut r = row![].spacing(10).align_y(Alignment::Center);
+    let label = label.into();
+    if !label.is_empty() {
+        r = r.push(text(label).size(13).color(p.ink).width(Length::Fixed(170.0)));
+    }
+    r.push(islider(range, value, on_change).step(step))
+        .push(
+            text(readout.into())
+                .size(12)
+                .color(p.muted)
+                .width(Length::Fixed(48.0)),
+        )
+        .into()
 }

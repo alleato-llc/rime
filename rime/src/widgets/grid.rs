@@ -168,10 +168,11 @@ type ScrollFn<'a, Message> = Box<dyn Fn(Vector) -> Message + 'a>;
 type SelectFn<'a, Message> = Box<dyn Fn(usize, usize, bool) -> Message + 'a>;
 type ActivateFn<'a, Message> = Box<dyn Fn(usize, usize) -> Message + 'a>;
 
-/// An inline editor hosted over one cell: the widget lays it out on top of the
-/// cell at `(row, col)` and forwards it events/focus, so a cell can be edited
-/// in place (the host supplies a `text_input` or any element).
-struct CellEditor<'a, Message, Theme, Renderer> {
+/// A widget hosted over one cell: the grid lays it out on top of the cell at
+/// `(row, col)` and forwards it events/focus, so a cell can host an inline text
+/// editor or an interactive control (a slider, checkbox, …) in place. The host
+/// supplies the element.
+struct CellOverlay<'a, Message, Theme, Renderer> {
     row: usize,
     col: usize,
     element: Element<'a, Message, Theme, Renderer>,
@@ -192,7 +193,7 @@ pub struct Grid<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer> {
     on_scroll: Option<ScrollFn<'a, Message>>,
     on_select: Option<SelectFn<'a, Message>>,
     on_activate: Option<ActivateFn<'a, Message>>,
-    editor: Option<CellEditor<'a, Message, Theme, Renderer>>,
+    overlays: Vec<CellOverlay<'a, Message, Theme, Renderer>>,
     width: Length,
     height: Length,
 }
@@ -216,7 +217,7 @@ pub fn grid<'a, Message, Theme, Renderer>(
         on_scroll: None,
         on_select: None,
         on_activate: None,
-        editor: None,
+        overlays: Vec::new(),
         width: Length::Fill,
         height: Length::Fill,
     }
@@ -259,22 +260,33 @@ impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
         self
     }
 
-    /// Host an inline editor `element` over the cell at `(row, col)` — the grid
-    /// lays it out on top of that cell and forwards it events + focus, so the
-    /// cell edits in place. Omit it (the default) for a read-only/point-select
-    /// grid.
-    pub fn editor(
+    /// Host `element` over the cell at `(row, col)` — the grid lays it out on top
+    /// of that cell and forwards it events + focus. Use it for an inline text
+    /// editor (the cell edits in place) or an interactive control (a slider,
+    /// checkbox, …). Call it once per hosted cell; later overlays draw on top.
+    pub fn overlay(
         mut self,
         row: usize,
         col: usize,
         element: impl Into<Element<'a, Message, Theme, Renderer>>,
     ) -> Self {
-        self.editor = Some(CellEditor {
+        self.overlays.push(CellOverlay {
             row,
             col,
             element: element.into(),
         });
         self
+    }
+
+    /// Alias of [`Self::overlay`] that reads clearly at the call site for the
+    /// single focus-bearing inline text editor.
+    pub fn editor(
+        self,
+        row: usize,
+        col: usize,
+        element: impl Into<Element<'a, Message, Theme, Renderer>>,
+    ) -> Self {
+        self.overlay(row, col, element)
     }
 
 
@@ -346,17 +358,16 @@ where
     }
 
     fn children(&self) -> Vec<Tree> {
-        match &self.editor {
-            Some(editor) => vec![Tree::new(&editor.element)],
-            None => vec![],
-        }
+        self.overlays
+            .iter()
+            .map(|overlay| Tree::new(&overlay.element))
+            .collect()
     }
 
     fn diff(&self, tree: &mut Tree) {
-        match &self.editor {
-            Some(editor) => tree.diff_children(std::slice::from_ref(&editor.element)),
-            None => tree.diff_children(&[] as &[Element<'_, Message, Theme, Renderer>]),
-        }
+        let elements: Vec<&Element<'_, Message, Theme, Renderer>> =
+            self.overlays.iter().map(|overlay| &overlay.element).collect();
+        tree.diff_children(&elements);
     }
 
     fn size(&self) -> Size<Length> {
@@ -365,30 +376,29 @@ where
 
     fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &Limits) -> Node {
         let size = limits.resolve(self.width, self.height, Size::ZERO);
-        match &mut self.editor {
-            Some(editor) => {
-                let origin = grid_cell_origin(
-                    size,
-                    self.metrics,
-                    self.offset,
-                    self.rows,
-                    self.cols,
-                    editor.row,
-                    editor.col,
-                );
-                let cell_limits = Limits::new(
-                    Size::ZERO,
-                    Size::new(self.metrics.column_width, self.metrics.row_height),
-                );
-                let child = editor.element.as_widget_mut().layout(
-                    &mut tree.children[0],
-                    renderer,
-                    &cell_limits,
-                );
-                Node::with_children(size, vec![child.move_to(origin)])
-            }
-            None => Node::new(size),
+        if self.overlays.is_empty() {
+            return Node::new(size);
         }
+        let (metrics, offset, rows, cols) = (self.metrics, self.offset, self.rows, self.cols);
+        let cell_limits = Limits::new(
+            Size::ZERO,
+            Size::new(metrics.column_width, metrics.row_height),
+        );
+        let children = self
+            .overlays
+            .iter_mut()
+            .zip(tree.children.iter_mut())
+            .map(|(overlay, child_tree)| {
+                let origin =
+                    grid_cell_origin(size, metrics, offset, rows, cols, overlay.row, overlay.col);
+                overlay
+                    .element
+                    .as_widget_mut()
+                    .layout(child_tree, renderer, &cell_limits)
+                    .move_to(origin)
+            })
+            .collect();
+        Node::with_children(size, children)
     }
 
     fn operate(
@@ -398,15 +408,16 @@ where
         renderer: &Renderer,
         operation: &mut dyn Operation,
     ) {
-        if let Some(editor) = &mut self.editor {
-            if let Some(child_layout) = layout.children().next() {
-                editor.element.as_widget_mut().operate(
-                    &mut tree.children[0],
-                    child_layout,
-                    renderer,
-                    operation,
-                );
-            }
+        for ((overlay, child_tree), child_layout) in self
+            .overlays
+            .iter_mut()
+            .zip(tree.children.iter_mut())
+            .zip(layout.children())
+        {
+            overlay
+                .element
+                .as_widget_mut()
+                .operate(child_tree, child_layout, renderer, operation);
         }
     }
 
@@ -424,24 +435,27 @@ where
         let bounds = layout.bounds();
         let body = self.body(bounds);
 
-        // The inline editor sees events first (typing, its own clicks). If it
-        // consumes one, the grid ignores it — so a click inside the editor never
-        // moves the selection.
-        if let Some(editor) = &mut self.editor {
-            if let Some(child_layout) = layout.children().next() {
-                editor.element.as_widget_mut().update(
-                    &mut tree.children[0],
-                    event,
-                    child_layout,
-                    cursor,
-                    _renderer,
-                    _clipboard,
-                    shell,
-                    _viewport,
-                );
-                if shell.is_event_captured() {
-                    return;
-                }
+        // Hosted overlays (an inline editor, controls) see events first — their
+        // own clicks/typing/drags. If one consumes an event, the grid ignores it,
+        // so interacting with an overlay never moves the selection.
+        for ((overlay, child_tree), child_layout) in self
+            .overlays
+            .iter_mut()
+            .zip(tree.children.iter_mut())
+            .zip(layout.children())
+        {
+            overlay.element.as_widget_mut().update(
+                child_tree,
+                event,
+                child_layout,
+                cursor,
+                _renderer,
+                _clipboard,
+                shell,
+                _viewport,
+            );
+            if shell.is_event_captured() {
+                return;
             }
         }
 
@@ -526,18 +540,22 @@ where
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {
-        // Over the editor, defer to it (text I-beam); else the grid's cell cursor.
-        if let Some(editor) = &self.editor {
-            if let Some(child_layout) = layout.children().next() {
-                if cursor.is_over(child_layout.bounds()) {
-                    return editor.element.as_widget().mouse_interaction(
-                        &tree.children[0],
-                        child_layout,
-                        cursor,
-                        viewport,
-                        renderer,
-                    );
-                }
+        // Over a hosted overlay, defer to it (a text I-beam, a slider grab, …);
+        // else the grid's own cell cursor.
+        for ((overlay, child_tree), child_layout) in self
+            .overlays
+            .iter()
+            .zip(tree.children.iter())
+            .zip(layout.children())
+        {
+            if cursor.is_over(child_layout.bounds()) {
+                return overlay.element.as_widget().mouse_interaction(
+                    child_tree,
+                    child_layout,
+                    cursor,
+                    viewport,
+                    renderer,
+                );
             }
         }
         if cursor.is_over(self.body(layout.bounds())) {
@@ -713,13 +731,18 @@ where
         };
         stroked(renderer, corner, palette.surface, palette.hairline);
 
-        // The inline editor, on top of everything, clipped to the body so it
-        // never spills into the header strips.
-        if let Some(editor) = &self.editor {
-            if let Some(child_layout) = layout.children().next() {
-                renderer.with_layer(body, |renderer| {
-                    editor.element.as_widget().draw(
-                        &tree.children[0],
+        // Hosted overlays (inline editor, controls), on top of everything and
+        // clipped to the body so they never spill into the header strips.
+        if !self.overlays.is_empty() {
+            renderer.with_layer(body, |renderer| {
+                for ((overlay, child_tree), child_layout) in self
+                    .overlays
+                    .iter()
+                    .zip(tree.children.iter())
+                    .zip(layout.children())
+                {
+                    overlay.element.as_widget().draw(
+                        child_tree,
                         renderer,
                         theme,
                         style,
@@ -727,8 +750,8 @@ where
                         cursor,
                         viewport,
                     );
-                });
-            }
+                }
+            });
         }
     }
 }

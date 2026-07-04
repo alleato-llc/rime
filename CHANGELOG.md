@@ -7,19 +7,25 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
-- **`grid` inline cell editor + double-click activation.** The grid can now host
-  an editor element over one cell: `grid(…).editor(row, col, element)` lays the
-  element out on top of that cell and forwards it events, focus (`operate`), and
-  mouse-interaction, so a cell edits **in place** (the host passes a `text_input`
-  or any element; clicks inside the editor no longer move the selection). A new
-  `.on_activate(|row, col| …)` fires on a **double-click** (400ms window, tracked
-  in widget state), which hosts use to open that editor. The grid gained the
-  `Theme`/`Renderer` type params needed to hold a child element — they default to
+- **`grid` hosted cell overlays + double-click activation.** The grid can host
+  widgets over cells: `grid(…).overlay(row, col, element)` (called once per
+  hosted cell; `.editor(…)` is an alias that reads clearly for the single
+  focus-bearing text editor) lays each element out on top of its cell and
+  forwards it events, focus (`operate`), and mouse-interaction — so a cell edits
+  **in place** or hosts an interactive control (slider / checkbox / dropdown /
+  stepper) inline, exactly where it lives. Clicks inside an overlay no longer
+  move the selection. A new `.on_activate(|row, col| …)` fires on a
+  **double-click** (400ms window, tracked in widget state). The grid gained the
+  `Theme`/`Renderer` type params needed to hold child elements — they default to
   iced's, so existing leaf-grid call sites (`grid(rows, cols, cell)`) are
   unchanged. This is what the Rust/iced Soroban port needs for spreadsheet-style
-  in-cell editing; built here, domain-free.
+  in-cell editing and inline controls; built here, domain-free.
 
 ### Changed
+- **`slider` collapses its label gutter when the label is empty.** A non-empty
+  label still reserves the fixed 170px gutter (so stacked sliders align); an
+  empty label omits the gutter entirely, so the slider fits a tight space — e.g.
+  hosted inside a spreadsheet cell. No change for labelled call sites.
 - **`slider` takes an owned label (`impl Into<String>`)** instead of a borrowed
   `&'a str`, so a caller can pass a computed label (e.g. a control's name built
   per frame) without fighting the returned element's lifetime — matching its
