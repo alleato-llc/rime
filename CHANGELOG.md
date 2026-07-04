@@ -21,6 +21,18 @@ so current work lives under **Unreleased**.
   is unchanged. No API or pixel change (container matches `button::text`).
 
 ### Added
+- **`grid` widget** (`grid` module) — a virtualized spreadsheet grid, rime's first
+  custom `Widget` (advanced API). `grid(rows, cols, cell_fn)` paints only the cells
+  in view with `fill_quad`/`fill_text`, so cost is bounded by the viewport, not the
+  logical size; frozen row/column headers, a `GridSelection` rectangle (anchor +
+  extent, corners normalize), and a `GridCell` provider (`text` + `CellAlign` +
+  optional per-cell colors) keep it domain-free. Stateless per the rime rule: scroll
+  `offset` and the selection are caller-owned inputs — the wheel reports a new clamped
+  offset via `on_scroll`, a click reports `(row, col, extend)` via `on_select`
+  (`extend` = shift held); only the live modifiers are tracked in widget state.
+  `GridMetrics` sets uniform cell/header sizes (per-column widths + resize-drag are a
+  planned extension on the same viewport math). Shown in `rime-demo` (a 200×26 table).
+  This is the grid the Rust/iced Soroban port needs; built here first, domain-free.
 - **`rename_bar` widget** (`rename` module) — `rename_bar(caption, placeholder,
   value, on_change, on_submit)`: an inline "rename this tab" field (muted caption
   beside a focused `text_field` on the surface), plus `rename_field_id()` so the host

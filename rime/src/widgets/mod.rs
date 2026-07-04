@@ -15,6 +15,7 @@ mod color_field;
 mod context_menu;
 mod dialog;
 mod field;
+pub mod grid;
 mod header;
 mod input;
 pub mod menu;
@@ -41,6 +42,9 @@ pub use color_field::color_field;
 pub use context_menu::context_menu;
 pub use dialog::dialog;
 pub use field::labeled;
+pub use grid::{
+    grid, CellAlign, Grid, GridCell, Metrics as GridMetrics, Selection as GridSelection,
+};
 pub use header::header_row;
 pub use input::text_field;
 pub use menu::{menu_bar, Item as MenuItem, Menu};

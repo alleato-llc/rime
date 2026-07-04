@@ -7,20 +7,26 @@
 //!
 //! Toggle the theme to confirm every component re-colors from the palette alone.
 
-use iced::widget::{column, row, Space};
-use iced::{Element, Length, Theme};
+use iced::widget::{column, container, row, Space};
+use iced::{Element, Length, Theme, Vector};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    button, caption, card, header_row, labeled, line_chart, pill, rename_bar, section,
-    shortcut_row, slider, stat, text_field, title_strip, tooltip, window_shell, LineChart, Series,
-    TooltipPosition,
+    button, caption, card, grid, header_row, labeled, line_chart, pill, rename_bar, section,
+    shortcut_row, slider, stat, text_field, title_strip, tooltip, window_shell, CellAlign,
+    GridCell, GridSelection, LineChart, Series, TooltipPosition,
 };
+
+// The demo grid's logical size — big enough to show virtualization + scroll.
+const GRID_ROWS: usize = 200;
+const GRID_COLS: usize = 26;
 
 #[derive(Default)]
 struct Gallery {
     choice: ThemeChoice,
     name: String,
     amount: f32,
+    grid_offset: Vector,
+    grid_selection: Option<GridSelection>,
 }
 
 #[derive(Debug, Clone)]
@@ -28,6 +34,8 @@ enum Message {
     ToggleTheme,
     Name(String),
     Amount(f32),
+    GridScrolled(Vector),
+    GridSelected(usize, usize, bool),
     Noop,
 }
 
@@ -37,6 +45,18 @@ impl Gallery {
             Message::ToggleTheme => self.choice = self.choice.toggled(),
             Message::Name(s) => self.name = s,
             Message::Amount(v) => self.amount = v,
+            Message::GridScrolled(offset) => self.grid_offset = offset,
+            Message::GridSelected(row, col, extend) => {
+                // The caller owns selection: extend keeps the anchor and moves
+                // the opposite corner; a plain click starts fresh.
+                self.grid_selection = Some(match (extend, self.grid_selection) {
+                    (true, Some(current)) => GridSelection {
+                        anchor: current.anchor,
+                        extent: (row, col),
+                    },
+                    _ => GridSelection::cell(row, col),
+                });
+            }
             Message::Noop => {}
         }
     }
@@ -128,6 +148,25 @@ impl Gallery {
                     "120×40",
                 ))
                 .height(Length::Fixed(160.0)),
+                section("Grid"),
+                caption("SCROLL · CLICK TO SELECT · SHIFT-CLICK TO EXTEND"),
+                container(
+                    grid(GRID_ROWS, GRID_COLS, |r, c| {
+                        // A multiplication table: right-aligned numbers, with
+                        // the first column tinted as a row label.
+                        if c == 0 {
+                            GridCell::new(format!("row {}", r + 1)).align(CellAlign::Left)
+                        } else {
+                            GridCell::right(((r + 1) * (c + 1)).to_string())
+                        }
+                    })
+                    .offset(self.grid_offset)
+                    .selection(self.grid_selection)
+                    .on_scroll(Message::GridScrolled)
+                    .on_select(Message::GridSelected),
+                )
+                .width(Length::Fill)
+                .height(Length::Fixed(200.0)),
                 section("Chart"),
                 line_chart(
                     LineChart {
