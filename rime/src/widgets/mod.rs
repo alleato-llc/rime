@@ -7,7 +7,9 @@
 //! state, and reads its colors from [`crate::theme::tokens`] — never a hardcoded
 //! color. See `COMPONENTS.md` for the contract a new primitive must meet.
 
+mod autocomplete;
 mod banner;
+mod bit_grid;
 pub mod button;
 mod card;
 pub mod chart;
@@ -35,7 +37,9 @@ mod tabs;
 mod toggle;
 mod tooltip;
 
+pub use autocomplete::{autocomplete_field, Suggestion};
 pub use banner::banner;
+pub use bit_grid::{bit_grid, BitBand};
 pub use card::card;
 pub use chart::{line_chart, LineChart, Series};
 pub use color_field::color_field;

@@ -11,14 +11,41 @@ use iced::widget::{column, container, row, Space};
 use iced::{Element, Length, Theme, Vector};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    button, caption, card, grid, header_row, labeled, line_chart, pill, rename_bar, section,
-    shortcut_row, slider, stat, text_field, title_strip, tooltip, window_shell, CellAlign,
-    GridCell, GridSelection, LineChart, Series, TooltipPosition,
+    autocomplete_field, bit_grid, button, caption, card, grid, header_row, labeled, line_chart,
+    pill, rename_bar, section, shortcut_row, slider, stat, text_field, title_strip, tooltip,
+    window_shell, BitBand, CellAlign, GridCell, GridSelection, LineChart, Series, Suggestion,
+    TooltipPosition,
 };
 
 // The demo grid's logical size — big enough to show virtualization + scroll.
 const GRID_ROWS: usize = 200;
 const GRID_COLS: usize = 26;
+
+// A stand-in "completion engine" for the autocomplete demo: a fixed function
+// vocabulary the host prefix-matches (a real host would ask its engine).
+const FUNCTIONS: &[(&str, &str)] = &[
+    ("sum", "sum(range)"),
+    ("product", "product(range)"),
+    ("average", "average(range)"),
+    ("median", "median(range)"),
+    ("min", "min(a, b, …)"),
+    ("max", "max(a, b, …)"),
+    ("round", "round(x, places)"),
+    ("sqrt", "sqrt(x)"),
+    ("stdev", "stdev(range)"),
+];
+
+fn completions(prefix: &str) -> Vec<Suggestion> {
+    if prefix.is_empty() {
+        return Vec::new();
+    }
+    let needle = prefix.to_lowercase();
+    FUNCTIONS
+        .iter()
+        .filter(|(name, _)| name.starts_with(&needle) && *name != needle)
+        .map(|(name, signature)| Suggestion::with_hint(*name, *signature))
+        .collect()
+}
 
 #[derive(Default)]
 struct Gallery {
@@ -27,6 +54,21 @@ struct Gallery {
     amount: f32,
     grid_offset: Vector,
     grid_selection: Option<GridSelection>,
+    ac_value: String,
+    ac_highlight: Option<usize>,
+    // A 16-bit register shown as RGB565 (R[15:11], G[10:5], B[4:0]).
+    color565: u16,
+}
+
+impl Gallery {
+    fn new() -> Self {
+        Self {
+            // An arbitrary starting color so the bit fields are lit on launch
+            // (RGB565 = R:10110 G:101010 B:01011, written in nibbles).
+            color565: 0b1011_0101_0100_1011,
+            ..Self::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +78,9 @@ enum Message {
     Amount(f32),
     GridScrolled(Vector),
     GridSelected(usize, usize, bool),
+    AcInput(String),
+    AcAccept(usize),
+    BitToggled(usize),
     Noop,
 }
 
@@ -57,6 +102,19 @@ impl Gallery {
                     _ => GridSelection::cell(row, col),
                 });
             }
+            Message::AcInput(value) => {
+                self.ac_value = value;
+                // Reset the highlight to the first row whenever the query
+                // changes (the host owns this; a real app might keep it).
+                self.ac_highlight = (!completions(&self.ac_value).is_empty()).then_some(0);
+            }
+            Message::AcAccept(index) => {
+                if let Some(picked) = completions(&self.ac_value).get(index) {
+                    self.ac_value = picked.text.clone();
+                }
+                self.ac_highlight = None;
+            }
+            Message::BitToggled(bit) => self.color565 ^= 1 << bit,
             Message::Noop => {}
         }
     }
@@ -105,6 +163,16 @@ impl Gallery {
                 .spacing(8),
                 section("Field + input"),
                 labeled("Name", text_field("type here…", &self.name, Message::Name)),
+                section("Autocomplete"),
+                caption("TYPE A FUNCTION PREFIX, e.g. \"s\" or \"m\""),
+                autocomplete_field(
+                    "formula…",
+                    &self.ac_value,
+                    completions(&self.ac_value),
+                    self.ac_highlight,
+                    Message::AcInput,
+                    Message::AcAccept,
+                ),
                 section("Rename bar"),
                 rename_bar(
                     "Rename tab",
@@ -167,6 +235,17 @@ impl Gallery {
                 )
                 .width(Length::Fill)
                 .height(Length::Fixed(200.0)),
+                section("Bit grid"),
+                caption("RGB565 — CLICK A BIT; SET BITS LIGHT UP IN THEIR FIELD"),
+                bit_grid(
+                    (0..16).map(|i| (self.color565 >> i) & 1 == 1).collect(),
+                    vec![
+                        BitBand::new("R", 11, 5),
+                        BitBand::new("G", 5, 6),
+                        BitBand::new("B", 0, 5),
+                    ],
+                    Message::BitToggled,
+                ),
                 section("Chart"),
                 line_chart(
                     LineChart {
@@ -212,7 +291,7 @@ impl Gallery {
 }
 
 fn main() -> iced::Result {
-    iced::application(Gallery::default, Gallery::update, Gallery::view)
+    iced::application(Gallery::new, Gallery::update, Gallery::view)
         .title("rime gallery")
         .theme(Gallery::theme)
         .window_size(iced::Size::new(760.0, 640.0))

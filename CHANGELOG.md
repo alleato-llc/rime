@@ -21,6 +21,26 @@ so current work lives under **Unreleased**.
   is unchanged. No API or pixel change (container matches `button::text`).
 
 ### Added
+- **`autocomplete_field` widget** (`autocomplete` module) —
+  `autocomplete_field(placeholder, value, suggestions, highlighted, on_input,
+  on_accept)`: a text input with a suggestion popup. Unlike iced's `combo_box`,
+  it does **not** filter — the caller computes the candidates (an engine's
+  completion pass, a fuzzy matcher, a history scan) and passes the finished
+  `Vec<Suggestion>` plus which row is `highlighted`; the widget draws them and
+  reports a click via `on_accept(index)`. Keyboard is the host's too (a
+  single-line input ignores ↑/↓, so the host drives the highlight — the
+  "suggestions when open, history when closed" dual role). `Suggestion` owns its
+  text + optional dim hint. Shown in `rime-demo` (prefix-matching a function
+  vocabulary). Generalizes `text_field`; fed/tty want this too.
+- **`bit_grid` widget** (`bit_grid` module) — a macOS-Calculator-style bit
+  editor: clickable bit cells that light up in their field's color when set,
+  grouped into nibbles. `bit_grid(bits, bands, on_toggle)` takes the bits as a
+  `Vec<bool>` (LSB-first, drawn high→low) and optional named `BitBand` ranges
+  (a `[hi:lo]` legend below); clicking a cell emits `on_toggle(bit_index)`.
+  Domain-free and stateless — the host owns the value and decodes it to bits (in
+  Soroban the `BinaryView`/`BitFormat` model; the planned `rust/kit` for Tama,
+  whose core this is). Shown in `rime-demo` as an editable RGB565 register.
+  Enum/numeric field pickers are a planned follow-up.
 - **`grid` widget** (`grid` module) — a virtualized spreadsheet grid, rime's first
   custom `Widget` (advanced API). `grid(rows, cols, cell_fn)` paints only the cells
   in view with `fill_quad`/`fill_text`, so cost is bounded by the viewport, not the
