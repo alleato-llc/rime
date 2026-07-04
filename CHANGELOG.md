@@ -7,6 +7,11 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`menu_bar_with_trailing`** — as `menu_bar`, but pins a caller-supplied
+  element (a sidebar-toggle icon, …) to the right end of the bar strip, the way
+  a macOS title bar carries a toolbar item on the right. `menu_bar` is now a thin
+  wrapper that passes `None`. The bar's title row is vertically centered so the
+  trailing element aligns with the menu titles.
 - **`grid` per-column widths + resize-drag.** `grid(…).column_widths(vec)`
   overrides individual column widths (indexed by column; a short/absent/`0.0`
   entry falls back to `metrics.column_width`), and `.on_resize_column(|col,

@@ -51,7 +51,7 @@ pub use grid::{
 };
 pub use header::header_row;
 pub use input::text_field;
-pub use menu::{menu_bar, Item as MenuItem, Menu};
+pub use menu::{menu_bar, menu_bar_with_trailing, Item as MenuItem, Menu};
 pub use modal::modal;
 pub use pill::pill;
 pub use rename::{rename_bar, rename_field_id};

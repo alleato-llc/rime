@@ -141,11 +141,23 @@ pub fn menu_bar<'a, M: Clone + 'a>(
     open: Option<usize>,
     on_toggle: impl Fn(Option<usize>) -> M + 'a,
 ) -> Element<'a, M> {
+    menu_bar_with_trailing(menus, open, on_toggle, None)
+}
+
+/// As [`menu_bar`], plus a `trailing` element pinned to the right end of the bar
+/// (e.g. a sidebar-toggle icon, the way a macOS title bar carries a toolbar item
+/// on the right). It sits in the opaque bar strip, vertically centered.
+pub fn menu_bar_with_trailing<'a, M: Clone + 'a>(
+    menus: Vec<Menu<M>>,
+    open: Option<usize>,
+    on_toggle: impl Fn(Option<usize>) -> M + 'a,
+    trailing: Option<Element<'a, M>>,
+) -> Element<'a, M> {
     let p = tokens();
 
     // The bar: one fixed-width title button per menu. Clicking the open menu's
     // title closes it; clicking another switches.
-    let mut titles = row![].spacing(0);
+    let mut titles = row![].spacing(0).align_y(iced::Alignment::Center);
     let open_menu = open.and_then(|i| menus.get(i));
     let dropdown = open_menu.map(|m| render_panel(&m.items));
     // If the open menu has an expanded submenu, build its flyout + the y-offset to
@@ -178,6 +190,12 @@ pub fn menu_bar<'a, M: Clone + 'a>(
             .style(button::text)
             .padding([8, 0]),
         );
+    }
+
+    // A trailing item (a sidebar toggle, …) pins to the right of the bar.
+    if let Some(trailing) = trailing {
+        titles = titles.push(Space::new().width(Length::Fill));
+        titles = titles.push(container(trailing).padding([0, 8]));
     }
 
     let bar = container(titles)
