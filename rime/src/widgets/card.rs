@@ -7,6 +7,23 @@ use iced::{Border, Color, Element, Length, Shadow, Vector};
 use crate::theme::tokens;
 
 /// A raised surface around `content`: padded, hairline-bordered, softly shadowed.
+///
+/// # Compared to raw iced
+///
+/// The raw version is a style closure you'd copy onto every container:
+///
+/// ```ignore
+/// // raw iced
+/// container(content).padding(16).style(|_| container::Style {
+///     background: Some(surface.into()),
+///     border: Border { color: hairline, width: 1.0, radius: 12.0.into() },
+///     shadow: Shadow { /* offset, blur, palette-aware alpha … */ },
+///     ..Default::default()
+/// })
+///
+/// // rime
+/// card(content)
+/// ```
 pub fn card<'a, M: 'a>(content: impl Into<Element<'a, M>>) -> Element<'a, M> {
     // Capture the palette now, so the draw-time style closure is independent of
     // the thread-local.

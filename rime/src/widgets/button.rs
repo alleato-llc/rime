@@ -5,6 +5,19 @@
 //! plain label (an icon column, a different size) reach for [`crate::theme::rounded`]
 //! directly.
 //!
+//! # Compared to raw iced
+//!
+//! ```ignore
+//! // raw iced — size, padding, and house style re-specified at every call
+//! button(text("Run").size(13))
+//!     .on_press(Message::Run)
+//!     .padding([7, 16])
+//!     .style(rounded(button::primary))
+//!
+//! // rime
+//! button::primary("Run", Message::Run)
+//! ```
+//!
 //! Generic over the message type so the set is reusable for any `M`; the press
 //! message is cloned by iced on each press, hence the `Clone` bound.
 

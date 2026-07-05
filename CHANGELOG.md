@@ -6,7 +6,18 @@ so current work lives under **Unreleased**.
 
 ## [Unreleased]
 
+### Added
+- **`LICENSE` file (MIT)** — the crate declared `MIT OR Apache-2.0` in metadata
+  but shipped no license text. Now single-licensed **MIT**, with the file
+  present, in preparation for making the repository public.
+- **README "rime vs. raw iced" section** + inline `# Compared to raw iced`
+  rustdoc blocks on `button`, `card`, and `stat` — concrete before/after diffs
+  showing what boilerplate each component collapses, framing rime as an
+  opinionated convenience layer (a facade) over iced.
+
 ### Changed
+- **License is now MIT only** (was `MIT OR Apache-2.0` in metadata). `Cargo.toml`
+  and the README footer updated to match.
 - **`BitBand` owns its label** (`label: String`, was `&'a str`; the struct
   loses its lifetime parameter and `bit_grid` takes `Vec<BitBand>`).
   `BitBand::new` accepts `impl Into<String>`, so string literals are unchanged,
