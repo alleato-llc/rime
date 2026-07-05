@@ -29,8 +29,11 @@ re-deriving padding, color, or radius — and what keep the kit portable.
    itself (`&[TreeNode]`), not the app's structs. Expansion/selection/scroll state
    is owned by the *caller* — the kit stays stateless.
 7. **Re-export it** from `rime/src/widgets/mod.rs` and **show it in the demo**
-   (`demo/src/main.rs`). The demo is the only real visual test (a GUI can't
-   be verified headlessly), so a component that isn't in it is untested.
+   (`demo/src/main.rs`). The demo is the only real visual test — a component
+   that isn't in it is untested. (`demo/src/shot.rs`'s `RIME_DEMO_SHOT` env var
+   can capture the demo to a PNG without a display, for mechanical regression
+   diffing, but that doesn't replace a human looking at `cargo run -p
+   rime-demo`.)
 
 ## The gate
 
