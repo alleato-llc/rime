@@ -54,3 +54,14 @@ pub fn danger<'a, M: Clone + 'a>(label: &str, on_press: M) -> Button<'a, M> {
 pub fn ghost<'a, M: Clone + 'a>(label: &str, on_press: M) -> Button<'a, M> {
     styled(label, on_press, button::text)
 }
+
+/// A borderless **icon button** — a single [`crate::icons`] glyph in the icon
+/// font, ghost-styled (for toolbar affordances, a panel's close ×, …). The host
+/// must have loaded [`crate::icons::FONT_BYTES`] at startup for the glyph to
+/// resolve. Square-ish padding so it reads as an icon, not a text label.
+pub fn icon<'a, M: Clone + 'a>(glyph: char, on_press: M) -> Button<'a, M> {
+    button(crate::icons::icon(glyph).size(16))
+        .on_press(on_press)
+        .padding([6, 8])
+        .style(rounded(button::text))
+}

@@ -7,6 +7,13 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **Embedded icon font** (`rime::icons`) — a tiny (~6 KB) subset of
+  [Lucide](https://lucide.dev) (ISC) so hosts get consistent, always-rendering
+  glyphs instead of relying on the platform's emoji/symbol coverage (iced's text
+  font renders neither emoji nor PUA symbols, so they show as tofu). Load
+  `icons::FONT_BYTES` once at startup, then `icons::icon(glyph)` /
+  `widgets::button::icon(glyph, msg)` render toolbar/toggle/close affordances
+  from the named `icons::glyph::*` codepoints.
 - **`LICENSE` file (MIT)** — the crate declared `MIT OR Apache-2.0` in metadata
   but shipped no license text. Now single-licensed **MIT**, with the file
   present, in preparation for making the repository public.
