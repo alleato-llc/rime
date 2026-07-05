@@ -7,6 +7,8 @@
 //!
 //! Toggle the theme to confirm every component re-colors from the palette alone.
 
+mod shot;
+
 use iced::widget::{column, container, row, Space};
 use iced::{Element, Length, Theme, Vector};
 use rime::theme::{self, ThemeChoice};
@@ -58,6 +60,7 @@ struct Gallery {
     ac_highlight: Option<usize>,
     // A 16-bit register shown as RGB565 (R[15:11], G[10:5], B[4:0]).
     color565: u16,
+    shot: Option<shot::Shot>,
 }
 
 impl Gallery {
@@ -66,6 +69,7 @@ impl Gallery {
             // An arbitrary starting color so the bit fields are lit on launch
             // (RGB565 = R:10110 G:101010 B:01011, written in nibbles).
             color565: 0b1011_0101_0100_1011,
+            shot: shot::configure(),
             ..Self::default()
         }
     }
@@ -81,11 +85,12 @@ enum Message {
     AcInput(String),
     AcAccept(usize),
     BitToggled(usize),
+    Shot(shot::Event),
     Noop,
 }
 
 impl Gallery {
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> iced::Task<Message> {
         match message {
             Message::ToggleTheme => self.choice = self.choice.toggled(),
             Message::Name(s) => self.name = s,
@@ -115,7 +120,20 @@ impl Gallery {
                 self.ac_highlight = None;
             }
             Message::BitToggled(bit) => self.color565 ^= 1 << bit,
+            Message::Shot(event) => {
+                if let Some(shot) = &mut self.shot {
+                    return shot::handle(shot, event);
+                }
+            }
             Message::Noop => {}
+        }
+        iced::Task::none()
+    }
+
+    fn subscription(&self) -> iced::Subscription<Message> {
+        match &self.shot {
+            Some(shot) => shot::subscription(shot),
+            None => iced::Subscription::none(),
         }
     }
 
@@ -281,12 +299,17 @@ impl Gallery {
             .spacing(16),
         );
 
-        iced::widget::container(body)
-            .padding(24)
-            .max_width(720)
-            .center_x(Length::Fill)
-            .height(Length::Fill)
-            .into()
+        iced::widget::container(
+            iced::widget::scrollable(
+                iced::widget::container(body)
+                    .padding(24)
+                    .max_width(720)
+                    .center_x(Length::Fill),
+            )
+            .height(Length::Fill),
+        )
+        .height(Length::Fill)
+        .into()
     }
 }
 
@@ -294,6 +317,7 @@ fn main() -> iced::Result {
     iced::application(Gallery::new, Gallery::update, Gallery::view)
         .title("rime gallery")
         .theme(Gallery::theme)
+        .subscription(Gallery::subscription)
         .window_size(iced::Size::new(760.0, 640.0))
         .run()
 }

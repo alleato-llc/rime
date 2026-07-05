@@ -8,3 +8,4 @@ description = "Showcase app exercising every rime component (cargo run -p rime-d
 [dependencies]
 rime = { path = "../rime" }
 iced = { workspace = true }
+png = "0.17"
