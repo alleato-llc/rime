@@ -21,7 +21,7 @@ to it on the next version bump).
 
 ## Map
 
-One crate, two modules.
+One crate, three modules.
 
 - `theme` — the visual language. `Palette` (nine semantic tokens), the palette
   channel (`enter`/`scope` set it, `tokens()` reads it — a thread-local, because
@@ -41,11 +41,20 @@ One crate, two modules.
   `banner`, `context_menu`, `menu` (`menu_bar` / `menu_bar_with_trailing` + `Submenu`
   flyouts), `tabs`, `settings`, `grid` (virtualized spreadsheet — a custom advanced
   `Widget`: frozen headers, selection rects, per-cell `Element` overlays, per-column
-  widths + resize-drag), `bit_grid` (bit editor)), each generic over the message
-  type, stateless, drawing from
+  widths + resize-drag), `bit_grid` (bit editor), `autocomplete` (`autocomplete_field`
+  text input + popup, plus a standalone `suggestion_list` for hosts that float the
+  popup above the input instead of below), `rename` (`rename_bar`, an inline
+  "rename this tab" field), `shortcut` (`shortcut_row`, a chord + description
+  reference row)), each generic over the message type, stateless, drawing from
   `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless
   too: the host owns open-menu / active-tab / hovered / active-section state and
   passes it in, so one component backs several apps.
+- `icons` — a small embedded icon font (a Lucide subset, ISC-licensed), so hosts
+  get glyphs that always render instead of depending on the platform's emoji/PUA
+  coverage. A host loads `icons::FONT_BYTES` once via `.font(..)` on the iced
+  application builder; `widgets::button::icon(icons::glyph::X, on_press)` then
+  renders a borderless icon button. Add more glyphs by re-subsetting the upstream
+  font and extending `icons::glyph`.
 
 `iced` is re-exported at the crate root (`rime::iced`) so dependents share one
 version.
@@ -59,10 +68,12 @@ cargo test                                  # must be green
 cargo run -p rime-demo                       # the only real visual check
 ```
 
-A GUI can't be verified headlessly, so `rime-demo` (the `demo/` crate) — every
+Visual *judgment* can't be automated, so `rime-demo` (the `demo/` crate) — every
 component on one screen, with a theme toggle — *is* the visual test. Any new or changed
 component must appear there, and must re-color correctly when the theme is toggled
-(proof no hardcoded color leaked).
+(proof no hardcoded color leaked). `RIME_DEMO_SHOT=<path> cargo run -p rime-demo`
+captures it to a PNG without a display for mechanical regression diffing, but
+doesn't replace looking at it.
 
 ## Conventions
 
@@ -92,10 +103,20 @@ component must appear there, and must re-color correctly when the theme is toggl
 
 ## Gotchas
 
-- **No headless visual check** — build + clippy + `cargo test` cover the layers
-  under the pixels; the rendering needs `cargo run -p rime-demo` on a machine
-  with a display.
-- **iced 0.13.** Styling is `fn(&Theme, Status) -> SomeStyle`, not objects; the
+- **No headless *judgment* check** — build + clippy + `cargo test` cover the
+  layers under the pixels, but confirming a component actually *looks* right
+  (and re-colors correctly on theme toggle) needs a human looking at
+  `cargo run -p rime-demo`. `demo/src/shot.rs` can capture the demo to a PNG
+  headlessly (`RIME_DEMO_SHOT=<path> cargo run -p rime-demo`, via iced's own
+  wgpu texture readback — no display or screen-recording permission needed)
+  for regression diffing, but that's a mechanical capture, not a substitute
+  for eyes on the render.
+- **Content taller than the window needs `scrollable`.** Without one, iced
+  doesn't just let a `Length::Shrink` column overflow past the window edge —
+  past some height it silently stops rendering the remaining children. See
+  the "Content taller than the window needs `scrollable`" section in
+  [`ICED.md`](./ICED.md).
+- **iced 0.14.** Styling is `fn(&Theme, Status) -> SomeStyle`, not objects; the
   five-slot `iced::theme::Palette` is *separate* from rime's nine-token `Palette`
   (the built-in widgets follow the former, rime's components the latter — keep them
   in step via `ThemeChoice`/`iced_theme`).

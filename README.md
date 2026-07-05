@@ -137,6 +137,24 @@ also provides the domain-free *machinery* so you don't reinvent it:
   canonical chrome-palette catalog shared by every consumer, so `fed` and `tty` offer
   one identical theme list instead of each maintaining its own.
 
+## Icons
+
+A small embedded icon font (a [Lucide](https://lucide.dev) subset, ISC-licensed)
+so hosts get glyphs that always render, instead of depending on the platform's
+emoji/symbol coverage (iced's default text font renders neither emoji nor
+box-drawing/PUA symbols — they show as tofu). Load it once at startup, then draw
+glyphs anywhere:
+
+```rust
+iced::application(..).font(rime::icons::FONT_BYTES).run()
+
+// then, anywhere in a view:
+rime::widgets::button::icon(rime::icons::glyph::SETTINGS, Message::OpenSettings)
+```
+
+The glyphs live in the Private Use Area; `rime::icons::glyph` names the ones this
+kit ships. Add more by re-subsetting the upstream font and extending `glyph`.
+
 ## Components
 
 All are stateless builders — the host owns selection / open / hover / active
@@ -149,7 +167,8 @@ cargo run -p rime-demo
 
 ### Actions & inputs
 
-- `button` — primary/secondary/danger/ghost variants
+- `button` — primary/secondary/danger/ghost variants, plus `button::icon` for a
+  borderless icon-only button (see [Icons](#icons))
 - `text_field` — text input
 - `labeled` — label + control row
 - `select` — dropdown
