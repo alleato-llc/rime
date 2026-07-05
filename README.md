@@ -139,39 +139,66 @@ also provides the domain-free *machinery* so you don't reinvent it:
 
 ## Components
 
-**Primitives** — `button` (primary/secondary/danger/ghost), `card`, `text_field`,
-`labeled`, `select` (dropdown), `slider` (labelled value slider with a readout),
-`color_field` (swatch + hex readout + R/G/B/A sliders), `header_row`, `pill`,
-`section`, `caption` (muted sub-heading), `shortcut_row` (chord + description
-reference row), `rename_bar` (inline "rename this tab" field), `stat`,
-`status_bar` (left/right footer bar), `line_chart`, `grid` (virtualized
-spreadsheet grid — frozen row/column headers, anchor+extent selection rectangles,
-a `fn(row, col) -> GridCell` factory, per-cell `Element` overlays for in-place
-editors/controls, double-click activation, and per-column widths with
-resize-drag), `bit_grid` (macOS-Calculator-style bit editor — labeled bit
-buttons + colored `BitBand`s that own their label, so a host passes a
-per-render decode like `owner rwx`; per-field editors are the host's job),
-`tooltip`, `toggle` (switch row),
-`stepper` (− value +).
-
-**Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
-message + action-button row — the alert/confirm shape), `banner` (dismissible
-notification strip), `context_menu` (right-click popup, floated at a point),
-`menu_bar` (top-level dropdown menus with optional submenu flyouts, plus a
-`_with_trailing` variant that pins a toolbar item to the right of the bar), `tabs`
-(document tab strip with hover-reveal close + background-press hook), `title_strip`
-(tab-bar-height header band: label + trailing controls) and `window_shell`
-(title_strip + body + status_bar — the chrome of a torn-off / detached window), and
-`settings` (a left-rail section shell apps fill with their own controls, with an
-optional pinned footer slot).
-
-These are stateless: the host owns selection / open / hover / active state and
-passes it in, so the same component backs multiple apps. See them all on one
-screen:
+All are stateless builders — the host owns selection / open / hover / active
+state and passes it in, so the same component backs multiple apps. See them
+all on one screen:
 
 ```sh
 cargo run -p rime-demo
 ```
+
+### Actions & inputs
+
+- `button` — primary/secondary/danger/ghost variants
+- `text_field` — text input
+- `labeled` — label + control row
+- `select` — dropdown
+- `slider` — labelled value slider with a readout
+- `color_field` — swatch + hex readout + R/G/B/A sliders
+- `autocomplete_field` — text input with a suggestion popup; `suggestion_list`
+  is the popup alone, for hosts that need it floated above the input instead
+  of below
+- `toggle` — switch row
+- `stepper` — − value +
+- `rename_bar` — inline "rename this tab" field
+
+### Layout & surfaces
+
+- `card` — bordered, radius, shadow, palette-aware surface
+- `header_row`
+- `section` / `caption` (muted sub-heading)
+- `status_bar` — left/right footer bar
+- `title_strip` — tab-bar-height header band: label + trailing controls
+- `window_shell` — `title_strip` + body + `status_bar`, the chrome of a
+  torn-off / detached window
+- `settings` — a left-rail section shell apps fill with their own controls,
+  with an optional pinned footer slot
+
+### Data & feedback
+
+- `stat` — big number over a muted caption
+- `pill`
+- `tooltip`
+- `shortcut_row` — chord + description reference row
+- `line_chart`
+- `grid` — virtualized spreadsheet grid: frozen row/column headers,
+  anchor+extent selection rectangles, a `fn(row, col) -> GridCell` factory,
+  per-cell `Element` overlays for in-place editors/controls, double-click
+  activation, and per-column widths with resize-drag
+- `bit_grid` — macOS-Calculator-style bit editor: labeled bit buttons +
+  colored `BitBand`s that own their label, so a host passes a per-render
+  decode like `owner rwx`; per-field editors are the host's job
+
+### Overlays & chrome
+
+- `modal` — dimmed overlay panel
+- `dialog` — titled modal + message + action-button row, the alert/confirm
+  shape
+- `banner` — dismissible notification strip
+- `context_menu` — right-click popup, floated at a point
+- `menu_bar` — top-level dropdown menus with optional submenu flyouts, plus a
+  `_with_trailing` variant that pins a toolbar item to the right of the bar
+- `tabs` — document tab strip with hover-reveal close + background-press hook
 
 ## What belongs here
 
