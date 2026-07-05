@@ -7,6 +7,11 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`suggestion_list()`** — the autocomplete popup, exposed on its own so a
+  host with a *bottom-anchored* input bar can place the completions *above* the
+  field (a REPL prompt) instead of dropping them below the screen edge.
+  `autocomplete_field()` now delegates to it; the module docs already promised
+  "a host composes the two halves itself" — this makes that possible.
 - **Embedded icon font** (`rime::icons`) — a tiny (~6 KB) subset of
   [Lucide](https://lucide.dev) (ISC) so hosts get consistent, always-rendering
   glyphs instead of relying on the platform's emoji/symbol coverage (iced's text
