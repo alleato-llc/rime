@@ -45,5 +45,8 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
-      - name: Build (release)
-        run: cargo build --workspace --release
+      # Debug, not release: CI ships no artifacts, and debug catches the same
+      # compile errors far faster (optimizing iced/wgpu in release dominated the
+      # run). Deps are already cached from the test step, so this is near-free.
+      - name: Build
+        run: cargo build --workspace
