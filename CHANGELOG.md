@@ -6,6 +6,14 @@ so current work lives under **Unreleased**.
 
 ## [Unreleased]
 
+### Changed
+- **`BitBand` owns its label** (`label: String`, was `&'a str`; the struct
+  loses its lifetime parameter and `bit_grid` takes `Vec<BitBand>`).
+  `BitBand::new` accepts `impl Into<String>`, so string literals are unchanged,
+  but a host can now build a band label from per-render owned data (a decoded
+  field readout like `owner rwx`) without fighting the borrow checker — the
+  common case, since a host derives the layout from a value each frame.
+
 ### Added
 - **`menu_bar_with_trailing`** — as `menu_bar`, but pins a caller-supplied
   element (a sidebar-toggle icon, …) to the right end of the bar strip, the way

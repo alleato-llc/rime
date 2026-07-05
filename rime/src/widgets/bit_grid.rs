@@ -29,17 +29,17 @@ const NIBBLE: usize = 4;
 /// low bit (0 = LSB); the range is `start ..= start + len - 1`. `color` tints
 /// the field's cells; `None` takes a distinct default from the palette.
 #[derive(Debug, Clone)]
-pub struct BitBand<'a> {
-    pub label: &'a str,
+pub struct BitBand {
+    pub label: String,
     pub start: usize,
     pub len: usize,
     pub color: Option<Color>,
 }
 
-impl<'a> BitBand<'a> {
-    pub fn new(label: &'a str, start: usize, len: usize) -> Self {
+impl BitBand {
+    pub fn new(label: impl Into<String>, start: usize, len: usize) -> Self {
         Self {
-            label,
+            label: label.into(),
             start,
             len,
             color: None,
@@ -58,7 +58,7 @@ impl<'a> BitBand<'a> {
 }
 
 /// The index of the band containing `bit`, if any (first match wins).
-fn band_of(bands: &[BitBand<'_>], bit: usize) -> Option<usize> {
+fn band_of(bands: &[BitBand], bit: usize) -> Option<usize> {
     bands
         .iter()
         .position(|b| bit >= b.start && bit < b.start + b.len)
@@ -66,7 +66,7 @@ fn band_of(bands: &[BitBand<'_>], bit: usize) -> Option<usize> {
 
 /// The tint for band `index`: its explicit color, else a distinct default
 /// rotated through the palette's accent tokens.
-fn band_color(bands: &[BitBand<'_>], index: usize, palette: &crate::theme::Palette) -> Color {
+fn band_color(bands: &[BitBand], index: usize, palette: &crate::theme::Palette) -> Color {
     if let Some(color) = bands[index].color {
         return color;
     }
@@ -84,7 +84,7 @@ fn band_color(bands: &[BitBand<'_>], index: usize, palette: &crate::theme::Palet
 /// `on_toggle(bit_index)`. Pass an empty `bands` for a plain register.
 pub fn bit_grid<'a, M: Clone + 'a>(
     bits: Vec<bool>,
-    bands: Vec<BitBand<'a>>,
+    bands: Vec<BitBand>,
     on_toggle: impl Fn(usize) -> M + Copy + 'a,
 ) -> Element<'a, M> {
     let palette = tokens();
