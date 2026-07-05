@@ -83,7 +83,9 @@ spreadsheet grid — frozen row/column headers, anchor+extent selection rectangl
 a `fn(row, col) -> GridCell` factory, per-cell `Element` overlays for in-place
 editors/controls, double-click activation, and per-column widths with
 resize-drag), `bit_grid` (macOS-Calculator-style bit editor — labeled bit
-buttons, named field bands, enum pickers), `tooltip`, `toggle` (switch row),
+buttons + colored `BitBand`s that own their label, so a host passes a
+per-render decode like `owner rwx`; per-field editors are the host's job),
+`tooltip`, `toggle` (switch row),
 `stepper` (− value +).
 
 **Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
