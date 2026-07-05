@@ -136,6 +136,21 @@ Subscription::run_with(root, |root: &PathBuf| {
 - `rich_text` span vectors often need an explicit element type:
   `let mut spans: Vec<iced::advanced::text::Span<'_, Message>> = Vec::new();`
 
+## Content taller than the window needs `scrollable`
+
+A `Length::Shrink` column nested in a `Length::Fill` container does **not**
+just visually overflow past the window edge when its natural content is
+taller than the window — past some height, iced stops rendering the
+remaining children entirely (confirmed both on a real window and in
+`iced_test::Simulator`'s offscreen render, so it's not a windowing/GPU-surface
+timing issue). Symptom: the window opens with only the top slice of content
+visible, and dragging the window taller reveals more of it — easy to
+misdiagnose as a "blank until resize" rendering bug. Fix: wrap the tall
+content in `iced::widget::scrollable(...)` — this was the actual fix for
+`rime-demo`, which lists ~15 sections plus a 200-row grid and a chart without
+one. If you see a widget tree that stops rendering partway down, check for
+missing `scrollable` before suspecting the renderer.
+
 ## Theme palette
 
 `iced::theme::Palette` gained a **`warning`** slot (between `success` and
