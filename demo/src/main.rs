@@ -157,6 +157,15 @@ impl Gallery {
                     button::ghost("Ghost", Message::Noop),
                 ]
                 .spacing(8),
+                section("Icons"),
+                row![
+                    button::icon(rime::icons::glyph::SETTINGS, Message::Noop),
+                    button::icon(rime::icons::glyph::COPY, Message::Noop),
+                    button::icon(rime::icons::glyph::CUT, Message::Noop),
+                    button::icon(rime::icons::glyph::PASTE, Message::Noop),
+                    button::icon(rime::icons::glyph::CLOSE, Message::Noop),
+                ]
+                .spacing(8),
                 section("Pills"),
                 row![
                     pill("running", t.accent),
@@ -318,6 +327,7 @@ fn main() -> iced::Result {
         .title("rime gallery")
         .theme(Gallery::theme)
         .subscription(Gallery::subscription)
+        .font(rime::icons::FONT_BYTES)
         .window_size(iced::Size::new(760.0, 640.0))
         .run()
 }
