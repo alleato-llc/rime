@@ -34,7 +34,12 @@ where
     let mut r = row![].spacing(10).align_y(Alignment::Center);
     let label = label.into();
     if !label.is_empty() {
-        r = r.push(text(label).size(13).color(p.ink).width(Length::Fixed(170.0)));
+        r = r.push(
+            text(label)
+                .size(13)
+                .color(p.ink)
+                .width(Length::Fixed(170.0)),
+        );
     }
     r.push(islider(range, value, on_change).step(step))
         .push(

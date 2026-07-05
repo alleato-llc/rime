@@ -38,8 +38,11 @@ One crate, two modules.
 - `widgets` — one primitive per file (`button`, `card`, `input`, `pill`, `stat`,
   `status_bar`, `field`/`labeled`, `header`, `section`, `chart`/`line_chart`,
   `select`, `slider`, `color_field`, `tooltip`, `toggle`, `stepper`, `modal`, `dialog`,
-  `banner`, `context_menu`, `menu` (`menu_bar` + `Submenu` flyouts), `tabs`,
-  `settings`), each generic over the message type, stateless, drawing from
+  `banner`, `context_menu`, `menu` (`menu_bar` / `menu_bar_with_trailing` + `Submenu`
+  flyouts), `tabs`, `settings`, `grid` (virtualized spreadsheet — a custom advanced
+  `Widget`: frozen headers, selection rects, per-cell `Element` overlays, per-column
+  widths + resize-drag), `bit_grid` (bit editor)), each generic over the message
+  type, stateless, drawing from
   `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless
   too: the host owns open-menu / active-tab / hovered / active-section state and
   passes it in, so one component backs several apps.

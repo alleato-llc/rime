@@ -116,8 +116,9 @@ impl Selection {
         }
     }
 
-    /// The inclusive `(row_min, row_max, col_min, col_max)` span.
-    fn bounds(&self) -> (usize, usize, usize, usize) {
+    /// The inclusive `(row_min, row_max, col_min, col_max)` span (corners
+    /// normalize, so it's valid for any anchor/extent order).
+    pub fn bounds(&self) -> (usize, usize, usize, usize) {
         (
             self.anchor.0.min(self.extent.0),
             self.anchor.0.max(self.extent.0),
@@ -127,9 +128,11 @@ impl Selection {
     }
 }
 
-/// Fixed sizing for the grid, in logical pixels. Uniform cell size keeps the
-/// virtualization arithmetic exact; per-column widths and resize-drag are a
-/// planned extension (they ride the same viewport math).
+/// Fixed sizing for the grid, in logical pixels. `column_width` is the *default*
+/// column width; a caller can override individual columns with
+/// [`Grid::column_widths`] (and let the user drag them via
+/// [`Grid::on_resize_column`]), in which case this is the fallback for any
+/// column the override vector doesn't cover.
 #[derive(Debug, Clone, Copy)]
 pub struct Metrics {
     pub row_height: f32,
@@ -153,20 +156,37 @@ impl Default for Metrics {
 
 const TEXT_SIZE: f32 = 13.0;
 const CELL_PAD: f32 = 6.0;
+/// How close (px) the pointer must be to a column's right border, in the header
+/// strip, to grab it for a resize drag.
+const RESIZE_HANDLE: f32 = 4.0;
+/// The narrowest a column can be dragged.
+const MIN_COLUMN_WIDTH: f32 = 24.0;
+
+/// An in-progress column-resize drag: the column being sized, the pointer x
+/// where the drag began (widget-relative), and that column's width at the start.
+#[derive(Clone, Copy)]
+struct Resizing {
+    col: usize,
+    start_x: f32,
+    start_width: f32,
+}
 
 /// Widget-internal transient state: the live modifiers (so a mouse press knows
-/// whether shift is held — mouse events don't carry modifiers in iced) and the
-/// last click's time+cell, for double-click detection.
+/// whether shift is held — mouse events don't carry modifiers in iced), the
+/// last click's time+cell for double-click detection, and any active
+/// column-resize drag.
 #[derive(Default)]
 struct State {
     modifiers: keyboard::Modifiers,
     last_click: Option<(Instant, usize, usize)>,
+    resizing: Option<Resizing>,
 }
 
 type CellFn<'a> = Box<dyn Fn(usize, usize) -> GridCell + 'a>;
 type ScrollFn<'a, Message> = Box<dyn Fn(Vector) -> Message + 'a>;
 type SelectFn<'a, Message> = Box<dyn Fn(usize, usize, bool) -> Message + 'a>;
 type ActivateFn<'a, Message> = Box<dyn Fn(usize, usize) -> Message + 'a>;
+type ResizeFn<'a, Message> = Box<dyn Fn(usize, f32) -> Message + 'a>;
 
 /// A widget hosted over one cell: the grid lays it out on top of the cell at
 /// `(row, col)` and forwards it events/focus, so a cell can host an inline text
@@ -193,6 +213,10 @@ pub struct Grid<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer> {
     on_scroll: Option<ScrollFn<'a, Message>>,
     on_select: Option<SelectFn<'a, Message>>,
     on_activate: Option<ActivateFn<'a, Message>>,
+    on_resize_column: Option<ResizeFn<'a, Message>>,
+    /// Per-column width overrides, indexed by column. A missing/short entry
+    /// falls back to `metrics.column_width`. `None` = every column uniform.
+    column_widths: Option<Vec<f32>>,
     overlays: Vec<CellOverlay<'a, Message, Theme, Renderer>>,
     width: Length,
     height: Length,
@@ -217,6 +241,8 @@ pub fn grid<'a, Message, Theme, Renderer>(
         on_scroll: None,
         on_select: None,
         on_activate: None,
+        on_resize_column: None,
+        column_widths: None,
         overlays: Vec::new(),
         width: Length::Fill,
         height: Length::Fill,
@@ -260,6 +286,22 @@ impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
         self
     }
 
+    /// Per-column width overrides (indexed by column; a short/absent entry falls
+    /// back to `metrics.column_width`). Pair with [`Self::on_resize_column`] to
+    /// let the user drag column borders.
+    pub fn column_widths(mut self, widths: Vec<f32>) -> Self {
+        self.column_widths = Some(widths);
+        self
+    }
+
+    /// Fires `(col, new_width)` while the user drags a column's right border in
+    /// the header strip — the host stores the width and feeds it back through
+    /// [`Self::column_widths`]. Widths report already clamped to a sane minimum.
+    pub fn on_resize_column(mut self, f: impl Fn(usize, f32) -> Message + 'a) -> Self {
+        self.on_resize_column = Some(Box::new(f));
+        self
+    }
+
     /// Host `element` over the cell at `(row, col)` — the grid lays it out on top
     /// of that cell and forwards it events + focus. Use it for an inline text
     /// editor (the cell edits in place) or an interactive control (a slider,
@@ -289,7 +331,6 @@ impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
         self.overlay(row, col, element)
     }
 
-
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
         self
@@ -311,10 +352,50 @@ impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
         }
     }
 
+    /// This column's width — its override if any, else the uniform default.
+    fn col_width(&self, col: usize) -> f32 {
+        self.column_widths
+            .as_ref()
+            .and_then(|widths| widths.get(col).copied())
+            .filter(|w| *w > 0.0)
+            .unwrap_or(self.metrics.column_width)
+    }
+
+    /// The left edge of column `col` in content space (sum of prior widths).
+    /// `col == self.cols` yields the total content width.
+    fn col_left(&self, col: usize) -> f32 {
+        match &self.column_widths {
+            None => col as f32 * self.metrics.column_width,
+            Some(_) => (0..col.min(self.cols)).map(|c| self.col_width(c)).sum(),
+        }
+    }
+
+    /// Total width of all columns.
+    fn content_width(&self) -> f32 {
+        self.col_left(self.cols)
+    }
+
+    /// The column containing content-space x (clamped to the last column).
+    fn col_at(&self, content_x: f32) -> usize {
+        match &self.column_widths {
+            None => (content_x / self.metrics.column_width).floor() as usize,
+            Some(_) => {
+                let mut acc = 0.0;
+                for col in 0..self.cols {
+                    acc += self.col_width(col);
+                    if content_x < acc {
+                        return col;
+                    }
+                }
+                self.cols.saturating_sub(1)
+            }
+        }
+    }
+
     /// The largest legal scroll offset given the body viewport — content size
     /// minus the visible window, never negative.
     fn max_offset(&self, body: Rectangle) -> Vector {
-        let content_w = self.cols as f32 * self.metrics.column_width;
+        let content_w = self.content_width();
         let content_h = self.rows as f32 * self.metrics.row_height;
         Vector::new(
             (content_w - body.width).max(0.0),
@@ -330,17 +411,40 @@ impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
         )
     }
 
-    /// The inclusive range of columns touching the body window at `offset`.
+    /// The half-open range of columns to draw for the body window at `offset`:
+    /// the first column at the left edge through the last touching the right
+    /// edge, plus a 2-column trailing overscan so a fast scroll never flashes an
+    /// unpainted edge.
     fn visible_cols(&self, body: Rectangle, offset: Vector) -> (usize, usize) {
-        let first = (offset.x / self.metrics.column_width).floor() as usize;
-        let count = (body.width / self.metrics.column_width).ceil() as usize + 2;
-        (first.min(self.cols), (first + count).min(self.cols))
+        let first = self.col_at(offset.x);
+        let last = self.col_at(offset.x + body.width);
+        (first.min(self.cols), (last + 3).min(self.cols))
     }
 
     fn visible_rows(&self, body: Rectangle, offset: Vector) -> (usize, usize) {
         let first = (offset.y / self.metrics.row_height).floor() as usize;
         let count = (body.height / self.metrics.row_height).ceil() as usize + 2;
         (first.min(self.rows), (first + count).min(self.rows))
+    }
+
+    /// The column whose right border sits under the pointer in the column-header
+    /// strip, if resize is enabled (`on_resize_column` set) and the pointer is
+    /// within [`RESIZE_HANDLE`] of that border. Drives both the grab and the
+    /// resize cursor.
+    fn resize_handle_at(&self, bounds: Rectangle, cursor: mouse::Cursor) -> Option<usize> {
+        self.on_resize_column.as_ref()?;
+        let position = cursor.position_in(bounds)?;
+        // The column-header strip only (right of the row header, above the body).
+        if position.y > self.metrics.header_height || position.x < self.metrics.header_width {
+            return None;
+        }
+        let body = self.body(bounds);
+        let offset = self.clamped_offset(body);
+        let (col0, col1) = self.visible_cols(body, offset);
+        (col0..col1).find(|&col| {
+            let border = self.metrics.header_width + self.col_left(col + 1) - offset.x;
+            (position.x - border).abs() <= RESIZE_HANDLE
+        })
     }
 }
 
@@ -365,8 +469,11 @@ where
     }
 
     fn diff(&self, tree: &mut Tree) {
-        let elements: Vec<&Element<'_, Message, Theme, Renderer>> =
-            self.overlays.iter().map(|overlay| &overlay.element).collect();
+        let elements: Vec<&Element<'_, Message, Theme, Renderer>> = self
+            .overlays
+            .iter()
+            .map(|overlay| &overlay.element)
+            .collect();
         tree.diff_children(&elements);
     }
 
@@ -379,18 +486,31 @@ where
         if self.overlays.is_empty() {
             return Node::new(size);
         }
-        let (metrics, offset, rows, cols) = (self.metrics, self.offset, self.rows, self.cols);
-        let cell_limits = Limits::new(
-            Size::ZERO,
-            Size::new(metrics.column_width, metrics.row_height),
-        );
+        let (metrics, offset, rows) = (self.metrics, self.offset, self.rows);
+        let content_w = self.content_width();
+        let content_h = rows as f32 * metrics.row_height;
+        // Precompute each overlay's column geometry before the mutable borrow.
+        let geometry: Vec<(f32, f32, usize)> = self
+            .overlays
+            .iter()
+            .map(|overlay| {
+                (
+                    self.col_left(overlay.col),
+                    self.col_width(overlay.col),
+                    overlay.row,
+                )
+            })
+            .collect();
         let children = self
             .overlays
             .iter_mut()
             .zip(tree.children.iter_mut())
-            .map(|(overlay, child_tree)| {
+            .enumerate()
+            .map(|(i, (overlay, child_tree))| {
+                let (col_left, col_w, row) = geometry[i];
                 let origin =
-                    grid_cell_origin(size, metrics, offset, rows, cols, overlay.row, overlay.col);
+                    overlay_origin(size, metrics, offset, content_w, content_h, col_left, row);
+                let cell_limits = Limits::new(Size::ZERO, Size::new(col_w, metrics.row_height));
                 overlay
                     .element
                     .as_widget_mut()
@@ -496,11 +616,23 @@ where
             }
 
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                // A press on a column-header border begins a resize drag.
+                if let Some(col) = self.resize_handle_at(bounds, cursor) {
+                    if let Some(position) = cursor.position_in(bounds) {
+                        state.resizing = Some(Resizing {
+                            col,
+                            start_x: position.x,
+                            start_width: self.col_width(col),
+                        });
+                        shell.capture_event();
+                        return;
+                    }
+                }
                 let Some(position) = cursor.position_in(body) else {
                     return;
                 };
                 let offset = self.clamped_offset(body);
-                let col = ((position.x + offset.x) / self.metrics.column_width).floor() as usize;
+                let col = self.col_at(position.x + offset.x);
                 let row = ((position.y + offset.y) / self.metrics.row_height).floor() as usize;
                 if row >= self.rows || col >= self.cols {
                     return;
@@ -509,7 +641,9 @@ where
                 // (inline edit); otherwise it's a plain select.
                 let now = Instant::now();
                 let is_double = state.last_click.is_some_and(|(when, r, c)| {
-                    r == row && c == col && now.duration_since(when).as_secs_f32() < DOUBLE_CLICK_SECS
+                    r == row
+                        && c == col
+                        && now.duration_since(when).as_secs_f32() < DOUBLE_CLICK_SECS
                 });
                 if is_double {
                     state.last_click = None;
@@ -528,6 +662,27 @@ where
                 }
             }
 
+            Event::Mouse(mouse::Event::CursorMoved { position }) => {
+                let Some(resizing) = state.resizing else {
+                    return;
+                };
+                let Some(on_resize) = &self.on_resize_column else {
+                    return;
+                };
+                let delta = (position.x - bounds.x) - resizing.start_x;
+                let width = (resizing.start_width + delta).max(MIN_COLUMN_WIDTH);
+                shell.publish(on_resize(resizing.col, width));
+                shell.request_redraw();
+                shell.capture_event();
+            }
+
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+                if state.resizing.take().is_some() =>
+            {
+                shell.request_redraw();
+                shell.capture_event();
+            }
+
             _ => {}
         }
     }
@@ -540,6 +695,13 @@ where
         viewport: &Rectangle,
         renderer: &Renderer,
     ) -> mouse::Interaction {
+        // A live resize drag, or hovering a column border, shows the ↔ cursor
+        // (and takes priority over anything underneath while dragging).
+        let state = tree.state.downcast_ref::<State>();
+        if state.resizing.is_some() || self.resize_handle_at(layout.bounds(), cursor).is_some() {
+            return mouse::Interaction::ResizingHorizontally;
+        }
+
         // Over a hosted overlay, defer to it (a text I-beam, a slider grab, …);
         // else the grid's own cell cursor.
         for ((overlay, child_tree), child_layout) in self
@@ -589,9 +751,9 @@ where
         let (col0, col1) = self.visible_cols(body, offset);
 
         let cell_rect = |row: usize, col: usize| Rectangle {
-            x: body.x + col as f32 * metrics.column_width - offset.x,
+            x: body.x + self.col_left(col) - offset.x,
             y: body.y + row as f32 * metrics.row_height - offset.y,
-            width: metrics.column_width,
+            width: self.col_width(col),
             height: metrics.row_height,
         };
 
@@ -627,7 +789,7 @@ where
                     let rect = Rectangle {
                         x: top_left.x,
                         y: top_left.y,
-                        width: (c1 - c0 + 1) as f32 * metrics.column_width,
+                        width: self.col_left(c1 + 1) - self.col_left(c0),
                         height: (r1 - r0 + 1) as f32 * metrics.row_height,
                     };
                     let mut tint = palette.accent;
@@ -652,9 +814,9 @@ where
         renderer.with_layer(top_strip, |renderer| {
             for col in col0..col1 {
                 let rect = Rectangle {
-                    x: body.x + col as f32 * metrics.column_width - offset.x,
+                    x: body.x + self.col_left(col) - offset.x,
                     y: bounds.y,
-                    width: metrics.column_width,
+                    width: self.col_width(col),
                     height: metrics.header_height,
                 };
                 let highlighted = selected_cols.is_some_and(|(c0, c1)| col >= c0 && col <= c1);
@@ -768,26 +930,27 @@ where
     }
 }
 
-/// The `(row, col)` cell's top-left relative to the grid's own origin, for
-/// positioning the inline editor in `layout`. A free function (not a method) so
-/// it can be called while `self.editor` is mutably borrowed.
-fn grid_cell_origin(
+/// A hosted overlay's top-left relative to the grid's own origin, for
+/// positioning it in `layout`. A free function (not a method) so it can be
+/// called with `self.overlays` mutably borrowed — the caller passes the
+/// content dimensions and the column's precomputed left edge.
+fn overlay_origin(
     size: Size,
     metrics: Metrics,
     offset: Vector,
-    rows: usize,
-    cols: usize,
+    content_w: f32,
+    content_h: f32,
+    col_left: f32,
     row: usize,
-    col: usize,
 ) -> Point {
     let body_w = (size.width - metrics.header_width).max(0.0);
     let body_h = (size.height - metrics.header_height).max(0.0);
-    let max_x = (cols as f32 * metrics.column_width - body_w).max(0.0);
-    let max_y = (rows as f32 * metrics.row_height - body_h).max(0.0);
+    let max_x = (content_w - body_w).max(0.0);
+    let max_y = (content_h - body_h).max(0.0);
     let off_x = offset.x.clamp(0.0, max_x);
     let off_y = offset.y.clamp(0.0, max_y);
     Point::new(
-        metrics.header_width + col as f32 * metrics.column_width - off_x,
+        metrics.header_width + col_left - off_x,
         metrics.header_height + row as f32 * metrics.row_height - off_y,
     )
 }

@@ -1,6 +1,8 @@
 # rime
 
-A small, consistent component kit on top of [iced](https://iced.rs).
+A small, consistent component kit on top of [iced](https://iced.rs) — an
+opinionated convenience layer (a facade) that trades iced's full flexibility for
+consistency and a fraction of the call-site boilerplate.
 
 `rime` is the answer to "I don't want to style every button." The corner radius,
 padding, surface colors, and text sizes live in one place, so a screen writes
@@ -36,6 +38,70 @@ fn view(&self) -> iced::Element<'_, Message> {
 // and wire the iced theme for the built-in widgets:
 fn theme(&self) -> iced::Theme { self.theme_choice.theme() }
 ```
+
+## rime vs. raw iced
+
+Every rime component is a thin builder over the exact iced you'd otherwise write
+by hand — it just writes the styling, padding, and sizing once so your call sites
+don't. The point is the diff:
+
+**A button.** Raw iced makes you re-specify size, padding, and style at every call:
+
+```rust
+// raw iced
+use iced::widget::{button, text};
+button(text("Run").size(13))
+    .on_press(Message::Run)
+    .padding([7, 16])
+    .style(rounded(button::primary))   // your own house style fn, threaded everywhere
+
+// rime
+use rime::widgets::button;
+button::primary("Run", Message::Run)
+```
+
+**A card surface.** The raw version is a style closure you copy-paste onto every
+container; rime bakes the border, radius, shadow, and palette-aware surface in:
+
+```rust
+// raw iced
+use iced::widget::container;
+use iced::{Border, Shadow};
+container(content)
+    .padding(16)
+    .style(|_| container::Style {
+        background: Some(surface.into()),
+        border: Border { color: hairline, width: 1.0, radius: 12.0.into() },
+        shadow: Shadow { /* offset, blur, palette-aware alpha … */ },
+        ..Default::default()
+    })
+
+// rime
+use rime::widgets::card;
+card(content)
+```
+
+**A stat readout.** A big number over a muted caption — two `text`s, two sizes,
+two palette colors, one `column`:
+
+```rust
+// raw iced
+use iced::widget::{column, text};
+column![
+    text(value).size(22).color(ink),
+    text(label).size(12).color(muted),
+].spacing(2)
+
+// rime
+use rime::widgets::stat;
+stat("p50", "12 ms".to_string())
+```
+
+The trade is deliberate: rime **narrows** iced's API. When a component's fixed
+sizing/style is wrong for a call site, drop back to raw iced (or reach for the
+lower-level seam the component is built on — `theme::rounded`, `theme::tokens`) —
+rime returns plain `iced::Element`s, so the two compose freely in the same tree.
+`iced` is re-exported as `rime::iced` so dependents pin one version.
 
 ## The palette channel
 
@@ -78,13 +144,21 @@ also provides the domain-free *machinery* so you don't reinvent it:
 `color_field` (swatch + hex readout + R/G/B/A sliders), `header_row`, `pill`,
 `section`, `caption` (muted sub-heading), `shortcut_row` (chord + description
 reference row), `rename_bar` (inline "rename this tab" field), `stat`,
-`status_bar` (left/right footer bar), `line_chart`, `tooltip`, `toggle` (switch
-row), `stepper` (− value +).
+`status_bar` (left/right footer bar), `line_chart`, `grid` (virtualized
+spreadsheet grid — frozen row/column headers, anchor+extent selection rectangles,
+a `fn(row, col) -> GridCell` factory, per-cell `Element` overlays for in-place
+editors/controls, double-click activation, and per-column widths with
+resize-drag), `bit_grid` (macOS-Calculator-style bit editor — labeled bit
+buttons + colored `BitBand`s that own their label, so a host passes a
+per-render decode like `owner rwx`; per-field editors are the host's job),
+`tooltip`, `toggle` (switch row),
+`stepper` (− value +).
 
 **Composite / chrome** — `modal` (dimmed overlay panel), `dialog` (titled modal +
 message + action-button row — the alert/confirm shape), `banner` (dismissible
 notification strip), `context_menu` (right-click popup, floated at a point),
-`menu_bar` (top-level dropdown menus with optional submenu flyouts), `tabs`
+`menu_bar` (top-level dropdown menus with optional submenu flyouts, plus a
+`_with_trailing` variant that pins a toolbar item to the right of the bar), `tabs`
 (document tab strip with hover-reveal close + background-press hook), `title_strip`
 (tab-bar-height header band: label + trailing controls) and `window_shell`
 (title_strip + body + status_bar — the chrome of a torn-off / detached window), and
@@ -115,4 +189,4 @@ cargo test
 cargo run -p rime-demo        # the only real visual check
 ```
 
-License: MIT OR Apache-2.0.
+License: [MIT](LICENSE).

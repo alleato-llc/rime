@@ -87,3 +87,44 @@ fn visible_window_never_exceeds_the_logical_size() {
     assert_eq!((row0, row1), (0, 5));
     assert_eq!((col0, col1), (0, 5));
 }
+
+#[test]
+fn per_column_widths_place_columns_by_prefix_sum() {
+    // Widths 50, 100, 30, then default (90) for the rest.
+    let g = sample(10, 10).column_widths(vec![50.0, 100.0, 30.0]);
+    assert_eq!(g.col_width(0), 50.0);
+    assert_eq!(g.col_width(1), 100.0);
+    assert_eq!(g.col_width(2), 30.0);
+    assert_eq!(g.col_width(3), 90.0); // falls back to the uniform default
+
+    // Left edges are the running sum of prior widths.
+    assert_eq!(g.col_left(0), 0.0);
+    assert_eq!(g.col_left(1), 50.0);
+    assert_eq!(g.col_left(2), 150.0);
+    assert_eq!(g.col_left(3), 180.0);
+    assert_eq!(g.col_left(4), 270.0);
+
+    // col_at maps content-x back to the containing column.
+    assert_eq!(g.col_at(0.0), 0);
+    assert_eq!(g.col_at(49.0), 0);
+    assert_eq!(g.col_at(50.0), 1);
+    assert_eq!(g.col_at(149.0), 1);
+    assert_eq!(g.col_at(150.0), 2);
+    assert_eq!(g.col_at(181.0), 3);
+}
+
+#[test]
+fn content_width_sums_overridden_and_default_columns() {
+    // Two overridden columns (50 + 100) + three defaults (90 each) = 420.
+    let g = sample(5, 5).column_widths(vec![50.0, 100.0]);
+    assert_eq!(g.content_width(), 50.0 + 100.0 + 90.0 * 3.0);
+}
+
+#[test]
+fn a_zero_or_missing_override_falls_back_to_the_default_width() {
+    // A 0.0 entry (unset by the host) reads as the default, not a 0-wide column.
+    let g = sample(5, 5).column_widths(vec![0.0, 120.0]);
+    assert_eq!(g.col_width(0), 90.0);
+    assert_eq!(g.col_width(1), 120.0);
+    assert_eq!(g.col_left(2), 90.0 + 120.0);
+}
