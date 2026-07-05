@@ -37,7 +37,7 @@ mod tabs;
 mod toggle;
 mod tooltip;
 
-pub use autocomplete::{autocomplete_field, Suggestion};
+pub use autocomplete::{autocomplete_field, suggestion_list, Suggestion};
 pub use banner::banner;
 pub use bit_grid::{bit_grid, BitBand};
 pub use card::card;

@@ -78,16 +78,34 @@ pub fn autocomplete_field<'a, M: Clone + 'a>(
     on_input: impl Fn(String) -> M + 'a,
     on_accept: impl Fn(usize) -> M + 'a,
 ) -> Element<'a, M> {
-    let palette = tokens();
-
     let field = text_input(placeholder, value)
         .on_input(on_input)
         .padding([8, 10])
         .style(input_style);
 
-    if suggestions.is_empty() {
-        return field.into();
+    match suggestion_list(suggestions, highlighted, on_accept) {
+        Some(popup) => column![field, popup].spacing(4).into(),
+        None => field.into(),
     }
+}
+
+/// Just the suggestion popup — the caller-provided `suggestions` as a bordered
+/// list, one row `highlighted`, each row clickable (`on_accept(index)`).
+/// Returns `None` when `suggestions` is empty (nothing to draw).
+///
+/// [`autocomplete_field`] stacks this *below* its input; a host with a
+/// bottom-anchored input bar composes it *above* instead — put this in a
+/// `column!` before the field. That placement freedom is exactly why the popup
+/// is exposed on its own.
+pub fn suggestion_list<'a, M: Clone + 'a>(
+    suggestions: Vec<Suggestion>,
+    highlighted: Option<usize>,
+    on_accept: impl Fn(usize) -> M + 'a,
+) -> Option<Element<'a, M>> {
+    if suggestions.is_empty() {
+        return None;
+    }
+    let palette = tokens();
 
     let mut list = column![].spacing(1).padding(4);
     for (index, suggestion) in suggestions.into_iter().take(POPUP_MAX_ROWS).enumerate() {
@@ -136,17 +154,18 @@ pub fn autocomplete_field<'a, M: Clone + 'a>(
         );
     }
 
-    let popup = container(list)
-        .width(Length::Fill)
-        .style(move |_theme| container::Style {
-            background: Some(palette.surface.into()),
-            border: Border {
-                color: palette.hairline,
-                width: 1.0,
-                radius: 6.0.into(),
-            },
-            ..container::Style::default()
-        });
-
-    column![field, popup].spacing(4).into()
+    Some(
+        container(list)
+            .width(Length::Fill)
+            .style(move |_theme| container::Style {
+                background: Some(palette.surface.into()),
+                border: Border {
+                    color: palette.hairline,
+                    width: 1.0,
+                    radius: 6.0.into(),
+                },
+                ..container::Style::default()
+            })
+            .into(),
+    )
 }
