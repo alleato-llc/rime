@@ -1,0 +1,49 @@
+name: CI
+
+# Build + lint + test the rime component kit and its demo app. rime is a pure
+# library (view code is exercised visually via `cargo run -p rime-demo`, not in
+# CI); the unit tests cover the logic-bearing parts — the theme system, the
+# grid/bit-grid geometry, color/palette helpers.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt · clippy · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      # iced/winit's Linux build deps (the demo binary links them; the library
+      # and its tests don't open a window).
+      - name: Windowing deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build (release)
+        run: cargo build --workspace --release

@@ -331,7 +331,6 @@ impl<'a, Message, Theme, Renderer> Grid<'a, Message, Theme, Renderer> {
         self.overlay(row, col, element)
     }
 
-
     pub fn width(mut self, width: impl Into<Length>) -> Self {
         self.width = width.into();
         self
@@ -470,8 +469,11 @@ where
     }
 
     fn diff(&self, tree: &mut Tree) {
-        let elements: Vec<&Element<'_, Message, Theme, Renderer>> =
-            self.overlays.iter().map(|overlay| &overlay.element).collect();
+        let elements: Vec<&Element<'_, Message, Theme, Renderer>> = self
+            .overlays
+            .iter()
+            .map(|overlay| &overlay.element)
+            .collect();
         tree.diff_children(&elements);
     }
 
@@ -491,7 +493,13 @@ where
         let geometry: Vec<(f32, f32, usize)> = self
             .overlays
             .iter()
-            .map(|overlay| (self.col_left(overlay.col), self.col_width(overlay.col), overlay.row))
+            .map(|overlay| {
+                (
+                    self.col_left(overlay.col),
+                    self.col_width(overlay.col),
+                    overlay.row,
+                )
+            })
             .collect();
         let children = self
             .overlays
@@ -502,8 +510,7 @@ where
                 let (col_left, col_w, row) = geometry[i];
                 let origin =
                     overlay_origin(size, metrics, offset, content_w, content_h, col_left, row);
-                let cell_limits =
-                    Limits::new(Size::ZERO, Size::new(col_w, metrics.row_height));
+                let cell_limits = Limits::new(Size::ZERO, Size::new(col_w, metrics.row_height));
                 overlay
                     .element
                     .as_widget_mut()
@@ -634,7 +641,9 @@ where
                 // (inline edit); otherwise it's a plain select.
                 let now = Instant::now();
                 let is_double = state.last_click.is_some_and(|(when, r, c)| {
-                    r == row && c == col && now.duration_since(when).as_secs_f32() < DOUBLE_CLICK_SECS
+                    r == row
+                        && c == col
+                        && now.duration_since(when).as_secs_f32() < DOUBLE_CLICK_SECS
                 });
                 if is_double {
                     state.last_click = None;

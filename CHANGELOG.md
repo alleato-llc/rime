@@ -14,8 +14,19 @@ so current work lives under **Unreleased**.
   rustdoc blocks on `button`, `card`, and `stat` — concrete before/after diffs
   showing what boilerplate each component collapses, framing rime as an
   opinionated convenience layer (a facade) over iced.
+- **CI** (`.github/workflows/ci.yml`) — fmt · clippy `-D warnings` · test ·
+  release build of the whole workspace on every push/PR (Linux, with the
+  iced/winit windowing dev deps the demo links against).
+- **Theme-helper tests** — round-trip coverage for the public `parse_color` /
+  `color_hex` pair, `Palette::color` / `set` by key + `PALETTE_KEYS`, and
+  `builtin_themes()` catalog invariants (the domain-free machinery the README
+  advertises to consumers). Lifts `theme/mod.rs` 32% → 82% and `palettes.rs`
+  0% → 100%. (Overall crate coverage stays low by design: the rest is pure
+  `view()`-building whose only meaningful check is the visual demo.)
 
 ### Changed
+- **Whole workspace is now rustfmt-clean** (`grid.rs`, `slider.rs` had drifted)
+  so the new CI fmt gate passes.
 - **License is now MIT only** (was `MIT OR Apache-2.0` in metadata). `Cargo.toml`
   and the README footer updated to match.
 - **`BitBand` owns its label** (`label: String`, was `&'a str`; the struct
