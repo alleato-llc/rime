@@ -676,11 +676,11 @@ where
                 shell.capture_event();
             }
 
-            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
-                if state.resizing.take().is_some() {
-                    shell.request_redraw();
-                    shell.capture_event();
-                }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+                if state.resizing.take().is_some() =>
+            {
+                shell.request_redraw();
+                shell.capture_event();
             }
 
             _ => {}
