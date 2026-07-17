@@ -55,6 +55,16 @@ pub fn ghost<'a, M: Clone + 'a>(label: &str, on_press: M) -> Button<'a, M> {
     styled(label, on_press, button::text)
 }
 
+/// A compact [`ghost`] — same borderless text style, tight padding. For a cluster
+/// of single-glyph controls (a card's `+` / `−` / `×`) so they read as one group
+/// instead of spaced-out words.
+pub fn ghost_compact<'a, M: Clone + 'a>(label: &str, on_press: M) -> Button<'a, M> {
+    button(text(label.to_string()).size(13))
+        .on_press(on_press)
+        .padding([4, 7])
+        .style(rounded(button::text))
+}
+
 /// A borderless **icon button** — a single [`crate::icons`] glyph in the icon
 /// font, ghost-styled (for toolbar affordances, a panel's close ×, …). The host
 /// must have loaded [`crate::icons::FONT_BYTES`] at startup for the glyph to
