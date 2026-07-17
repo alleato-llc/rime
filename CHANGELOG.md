@@ -6,6 +6,17 @@ so current work lives under **Unreleased**.
 
 ## [Unreleased]
 
+### Added
+- **`button::ghost_compact`** — a borderless text button like `ghost` but with
+  tight padding (`[4, 7]` vs `[7, 16]`), for a cluster of single-glyph controls
+  (a card's `+` / `−` / `×` / `⊞`) that should read as one group rather than
+  spaced-out words. tty's metric-popover control cluster uses it.
+- **`table` gained an optional per-cell text color.**
+  `Table::cell_color(Fn(row, col) -> Option<Color>)` overrides a cell's text color
+  (return `None` to keep the default `ink`), consulted per visible cell at draw
+  time. Backward-compatible — existing tables render unchanged. tty grades a
+  process table's CPU% cell amber/red by load with it.
+
 ### Fixed
 - **`toggle` was invisible on light themes.** The off-state track (`hairline`)
   and the knob (`bg`) sat on a `surface` panel in near-identical tones —
