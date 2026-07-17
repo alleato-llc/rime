@@ -6,7 +6,63 @@ so current work lives under **Unreleased**.
 
 ## [Unreleased]
 
+### Fixed
+- **`toggle` was invisible on light themes.** The off-state track (`hairline`)
+  and the knob (`bg`) sat on a `surface` panel in near-identical tones —
+  on Solarized Light the switch read as a faint dot, if anything (a real
+  user couldn't find tty's enable toggle). Both the track and the knob now
+  carry a 1px `muted` outline, keeping the switch's shape legible in every
+  theme without changing the dark-theme look.
+
+### Changed
+- **`table` gained a right-click hook.** A new `on_right_click(usize) -> M`
+  callback fires on right-click of a row, mirroring `tabs`'s
+  `on_tab_right_press`, so a host can anchor a per-row context menu (tty's
+  Scrollback History copy/clear menu). It also now recognizes Ctrl+click
+  (macOS's secondary-click convention — Control held on a *left* press, since
+  a trackpad never sends a real right button for it) as equivalent to a right
+  click, tracking live modifiers internally so hosts don't have to special-case
+  it themselves the way `tty` already had to for panes/tabs.
+- **`Sparkline` is now multi-series.** Its single `{ values, max, color }` is
+  replaced by `{ series: Vec<SparkSeries>, max }` (a new `SparkSeries { values,
+  color }`), so two lines can share one canvas on a common scale (tty's combined
+  Net I/O / Disk I/O cells). A `Sparkline::single(values, max, color)`
+  constructor keeps the common one-line case a one-liner. Breaking for literal
+  constructors of the old struct.
+- **`LineChart` gained an optional `y_max_label: Option<String>`.** When set, it
+  labels the top of the y axis with caller-formatted text (a throughput rate, a
+  percentage) instead of the raw `{ymax:.0}` number, so a chart of bytes/sec or
+  percentages reads in its own units. `None` keeps the prior numeric label.
+  Breaking for `LineChart` struct literals (one new field).
+- **`LineChart` gained an optional `y_max: Option<f64>`.** `Some(m)` fixes the y
+  axis at `0..m` so a bounded gauge (a 0..100 percentage) reads as a fraction of
+  its full range — a steady 32%-memory line sits a third up the plot instead of
+  being auto-scaled to the top. `None` keeps the prior behavior (auto-scale to the
+  data's own peak), right for open-ended series like a byte-rate. Breaking for
+  `LineChart` struct literals (one new field).
+- **`LineChart` now has an on-hover point readout.** With the pointer over the
+  plot it snaps to the nearest sample, draws a vertical guide, and marks + labels
+  each series' value there — pure paint off the `cursor` the canvas already hands
+  `draw`, so no state and no message. A second new field, `hover_format:
+  Option<fn(f64) -> String>`, formats those readouts in the caller's units (a
+  plain `fn` pointer, not a closure, so the widget stays trivially constructible);
+  `None` shows the raw number. Breaking for `LineChart` struct literals (one more
+  new field).
+
 ### Added
+- **`table` widget** (`table` module) — a plain, virtualized data table: header
+  row + zebra-striped scrolling body, whole-*row* selection/highlight, and
+  fixed-or-fill column widths (`TableColumn::fixed`/`::fill`). The
+  general-purpose "list of records" counterpart to `grid`'s spreadsheet
+  semantics (per-cell selection, inline editors, resizable columns) — reach for
+  `table` for anything that reads as rows of text (logs, search results, file
+  lists) and `grid` only for actual spreadsheet behavior. Virtualized like
+  `grid` (cost bounded by the viewport, not row count), so it comfortably holds
+  thousands of rows. Stateless per the rime rule: `offset`/`selected` are
+  caller-owned inputs; a click reports the row via `on_select`, a double-click
+  (400ms window, mirroring `grid`'s pattern) via `on_activate`. Reuses `grid`'s
+  `CellAlign` rather than a duplicate enum. Built for tty/fed-ide's terminal
+  Scrollback History panel (an accordion of commands + their captured output).
 - **`suggestion_list()`** — the autocomplete popup, exposed on its own so a
   host with a *bottom-anchored* input bar can place the completions *above* the
   field (a REPL prompt) instead of dropping them below the screen edge.

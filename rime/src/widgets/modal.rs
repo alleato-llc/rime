@@ -7,6 +7,10 @@ use iced::{Border, Color, Element, Length};
 
 use crate::theme::tokens;
 
+/// The panel width [`modal`] uses — the alert/confirm shape (title + message +
+/// buttons) that [`dialog`](super::dialog::dialog) is built on.
+pub const DEFAULT_MAX_WIDTH: f32 = 420.0;
+
 /// Overlay `content` (wrapped in a centered surface panel) over `base`. A click on
 /// the dimmed backdrop emits `on_dismiss`.
 pub fn modal<'a, M: Clone + 'a>(
@@ -14,13 +18,25 @@ pub fn modal<'a, M: Clone + 'a>(
     content: impl Into<Element<'a, M>>,
     on_dismiss: M,
 ) -> Element<'a, M> {
+    modal_sized(base, content, on_dismiss, DEFAULT_MAX_WIDTH)
+}
+
+/// Like [`modal`], with a caller-chosen panel width instead of the alert/confirm
+/// default — for content wider than a title+message+buttons dialog (a log view, a
+/// form with side-by-side fields, etc).
+pub fn modal_sized<'a, M: Clone + 'a>(
+    base: impl Into<Element<'a, M>>,
+    content: impl Into<Element<'a, M>>,
+    on_dismiss: M,
+    max_width: f32,
+) -> Element<'a, M> {
     // Capture the palette now so the draw-time style closures don't read the
     // thread-local after the scope has dropped.
     let p = tokens();
 
     let panel = container(content)
         .padding(20)
-        .max_width(420.0)
+        .max_width(max_width)
         .style(move |_theme| container::Style {
             background: Some(p.surface.into()),
             border: Border {

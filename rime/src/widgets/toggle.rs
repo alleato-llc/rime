@@ -21,9 +21,12 @@ pub fn toggle<'a, M: Clone + 'a>(label: &str, value: bool, on_toggle: M) -> Elem
     )
     .style(move |_| container::Style {
         background: Some(p.bg.into()),
+        // The knob is `bg` on a track that can be `hairline` — near-identical
+        // tones on light themes. A muted outline keeps it legible everywhere.
         border: Border {
+            color: p.muted,
+            width: 1.0,
             radius: 7.0.into(),
-            ..Default::default()
         },
         ..Default::default()
     });
@@ -38,9 +41,12 @@ pub fn toggle<'a, M: Clone + 'a>(label: &str, value: bool, on_toggle: M) -> Elem
         .padding(3)
         .style(move |_| container::Style {
             background: Some(if value { p.accent } else { p.hairline }.into()),
+            // Off-state `hairline` can vanish against a light surface — the
+            // outline keeps the switch's shape visible in every theme.
             border: Border {
+                color: p.muted,
+                width: 1.0,
                 radius: 10.0.into(),
-                ..Default::default()
             },
             ..Default::default()
         });

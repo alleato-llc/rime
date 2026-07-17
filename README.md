@@ -204,6 +204,12 @@ cargo run -p rime-demo
   anchor+extent selection rectangles, a `fn(row, col) -> GridCell` factory,
   per-cell `Element` overlays for in-place editors/controls, double-click
   activation, and per-column widths with resize-drag
+- `table` — virtualized data table: header row + zebra-striped scrolling body,
+  whole-*row* selection/highlight, fixed or fill-width columns. The
+  general-purpose "list of records" counterpart to `grid`'s spreadsheet
+  semantics — reach for `table` for logs, search results, or file lists (e.g.
+  tty/fed-ide's terminal Scrollback History), and `grid` only for actual
+  spreadsheet behavior
 - `bit_grid` — macOS-Calculator-style bit editor: labeled bit buttons +
   colored `BitBand`s that own their label, so a host passes a per-render
   decode like `owner rwx`; per-field editors are the host's job

@@ -16,25 +16,37 @@ pub const TEXT_SIZE: f32 = 13.0;
 /// background with a hairline separating it from the content above. Both ends are
 /// rendered in the bar's own muted type, so every app's footer matches.
 pub fn status_bar<'a, M: 'a>(left: &str, right: &str) -> Element<'a, M> {
-    let p = tokens();
-    container(
+    status_bar_content(
         row![
-            text(left.to_string()).size(TEXT_SIZE).color(p.muted),
+            text(left.to_string()).size(TEXT_SIZE).color(tokens().muted),
             Space::new().width(Length::Fill),
-            text(right.to_string()).size(TEXT_SIZE).color(p.muted),
+            text(right.to_string())
+                .size(TEXT_SIZE)
+                .color(tokens().muted),
         ]
         .align_y(iced::Alignment::Center),
     )
-    .padding([7, 14])
-    .width(Length::Fill)
-    .style(move |_| container::Style {
-        background: Some(p.surface.into()),
-        border: Border {
-            color: p.hairline,
-            width: 1.0,
+}
+
+/// The footer's styled strip around arbitrary `content` — the same surface fill,
+/// hairline top border, and padding as [`status_bar`], but the host supplies the
+/// row (e.g. to embed sparklines or other widgets alongside the text). Use
+/// [`TEXT_SIZE`] and the theme's muted color for any text inside to match the
+/// text-only [`status_bar`]. [`status_bar`] is the plain-text convenience over
+/// this.
+pub fn status_bar_content<'a, M: 'a>(content: impl Into<Element<'a, M>>) -> Element<'a, M> {
+    let p = tokens();
+    container(content)
+        .padding([7, 14])
+        .width(Length::Fill)
+        .style(move |_| container::Style {
+            background: Some(p.surface.into()),
+            border: Border {
+                color: p.hairline,
+                width: 1.0,
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    })
-    .into()
+        })
+        .into()
 }
