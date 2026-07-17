@@ -102,6 +102,7 @@ struct State {
 }
 
 type CellFn<'a> = Box<dyn Fn(usize, usize) -> String + 'a>;
+type CellColorFn<'a> = Box<dyn Fn(usize, usize) -> Option<Color> + 'a>;
 type ScrollFn<'a, Message> = Box<dyn Fn(f32) -> Message + 'a>;
 type SelectFn<'a, Message> = Box<dyn Fn(usize) -> Message + 'a>;
 type ActivateFn<'a, Message> = Box<dyn Fn(usize) -> Message + 'a>;
@@ -112,6 +113,7 @@ pub struct Table<'a, Message> {
     rows: usize,
     columns: Vec<TableColumn>,
     cell: CellFn<'a>,
+    cell_color: Option<CellColorFn<'a>>,
     metrics: TableMetrics,
     offset: f32,
     selected: Option<usize>,
@@ -137,6 +139,7 @@ pub fn table<'a, Message>(
         rows,
         columns,
         cell: Box::new(cell),
+        cell_color: None,
         metrics: TableMetrics::default(),
         offset: 0.0,
         selected: None,
@@ -160,6 +163,14 @@ impl<'a, Message> Table<'a, Message> {
     /// The vertical scroll offset in pixels (caller-owned).
     pub fn offset(mut self, offset: f32) -> Self {
         self.offset = offset;
+        self
+    }
+
+    /// An optional per-cell text color. Return `Some(color)` to override a cell's
+    /// text color (e.g. to grade a value by threshold), or `None` to leave it the
+    /// default `ink`. Called for each visible cell at draw time.
+    pub fn cell_color(mut self, f: impl Fn(usize, usize) -> Option<Color> + 'a) -> Self {
+        self.cell_color = Some(Box::new(f));
         self
     }
 
@@ -498,7 +509,12 @@ where
                         .get(col_idx)
                         .map(|c| c.align)
                         .unwrap_or_default();
-                    draw_text(renderer, &text, rect, align, palette.ink, font);
+                    let color = self
+                        .cell_color
+                        .as_ref()
+                        .and_then(|f| f(row, col_idx))
+                        .unwrap_or(palette.ink);
+                    draw_text(renderer, &text, rect, align, color, font);
                 }
                 hline(
                     renderer,
