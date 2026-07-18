@@ -68,6 +68,6 @@ pub use stat::stat;
 pub use status_bar::{status_bar, status_bar_content};
 pub use stepper::stepper;
 pub use table::{table, ColumnWidth, Table, TableColumn, TableMetrics};
-pub use tabs::{tabs, Tab, TabBarStyle, TAB_BAR_HEIGHT};
+pub use tabs::{reorder_slice, tabs, Reorder, Tab, TabBarStyle, TAB_BAR_HEIGHT};
 pub use toggle::toggle;
 pub use tooltip::{tooltip, Position as TooltipPosition};

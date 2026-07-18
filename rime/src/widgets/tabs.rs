@@ -50,6 +50,10 @@ pub struct TabBarStyle {
     pub highlight_active: bool,
     /// Tab label text size, in logical pixels.
     pub text_size: f32,
+    /// Fill the strip's background with the `surface` token (`true`, a raised bar — the
+    /// window-level look) or leave it transparent (`false`, so the strip blends into
+    /// whatever it sits on, e.g. a tab strip nested inside a bordered pane).
+    pub filled: bool,
 }
 
 impl Default for TabBarStyle {
@@ -57,7 +61,71 @@ impl Default for TabBarStyle {
         Self {
             highlight_active: true,
             text_size: 13.0,
+            filled: true,
         }
+    }
+}
+
+/// Tracks a drag-to-reorder gesture across a tab strip, browser-style: press a tab to
+/// arm the drag, and as the pointer crosses other tabs the dragged tab follows. The
+/// [`tabs`] widget is stateless and only reports gestures, so the *host* owns one of
+/// these, arms it from the strip's `on_activate` (which fires on mouse-down), feeds it
+/// the hovered index from `on_hover`, and applies each returned move to its own
+/// collection with [`reorder_slice`]. Every strip that reorders — document tabs,
+/// terminal tabs, nested pane tabs — drives the same three calls instead of
+/// re-deriving the anchor bookkeeping.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Reorder {
+    anchor: Option<usize>,
+}
+
+impl Reorder {
+    /// Arm a drag on the pressed tab `index`.
+    pub fn begin(&mut self, index: usize) {
+        self.anchor = Some(index);
+    }
+
+    /// Whether a drag is currently armed.
+    pub fn is_active(&self) -> bool {
+        self.anchor.is_some()
+    }
+
+    /// The tab index the drag currently sits on, if armed.
+    pub fn anchor(&self) -> Option<usize> {
+        self.anchor
+    }
+
+    /// While dragging, the pointer entered tab `target`. Returns the `(from, to)` move
+    /// the host should apply (and advances the anchor, so successive crossings keep
+    /// moving the tab); `None` if no drag is armed or the target is already the anchor.
+    pub fn drag_to(&mut self, target: usize) -> Option<(usize, usize)> {
+        let from = self.anchor?;
+        if from == target {
+            return None;
+        }
+        self.anchor = Some(target);
+        Some((from, target))
+    }
+
+    /// Clear the drag on pointer release, returning the final anchor (where the tab
+    /// ended up) if a drag was armed.
+    pub fn end(&mut self) -> Option<usize> {
+        self.anchor.take()
+    }
+}
+
+/// Move the element at `from` to `to`, shifting the elements in between — the list
+/// mutation behind a browser-style tab reorder. Alloc-free (a subrange rotate). No-op
+/// if either index is out of range or they are equal.
+pub fn reorder_slice<T>(items: &mut [T], from: usize, to: usize) {
+    let n = items.len();
+    if from >= n || to >= n || from == to {
+        return;
+    }
+    if from < to {
+        items[from..=to].rotate_left(1);
+    } else {
+        items[to..=from].rotate_right(1);
     }
 }
 
@@ -149,12 +217,57 @@ pub fn tabs<'a, M: Clone + 'a>(
     // tab (when they don't fill it) bubbles to this mouse_area. A *double*-click there
     // is the host's cue to open a new tab — a single stray click does nothing — while
     // tab bodies capture their own presses.
+    let filled = style.filled;
     container(
         mouse_area(scroller)
             .on_double_click(on_background_press)
             .on_exit(on_hover(None)),
     )
     .width(Length::Fill)
-    .style(move |_| container::background(p.surface))
+    .style(move |_| {
+        if filled {
+            container::background(p.surface)
+        } else {
+            container::Style::default()
+        }
+    })
     .into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{reorder_slice, Reorder};
+
+    #[test]
+    fn reorder_slice_moves_right_and_left() {
+        let mut v = vec!['a', 'b', 'c', 'd'];
+        reorder_slice(&mut v, 0, 2); // a past b,c
+        assert_eq!(v, ['b', 'c', 'a', 'd']);
+        reorder_slice(&mut v, 3, 1); // d back between b and c
+        assert_eq!(v, ['b', 'd', 'c', 'a']);
+    }
+
+    #[test]
+    fn reorder_slice_ignores_bad_indices() {
+        let mut v = vec![1, 2, 3];
+        reorder_slice(&mut v, 1, 1); // same index
+        reorder_slice(&mut v, 0, 9); // out of range
+        reorder_slice(&mut v, 9, 0);
+        assert_eq!(v, [1, 2, 3]);
+    }
+
+    #[test]
+    fn reorder_tracker_follows_the_drag() {
+        let mut r = Reorder::default();
+        assert!(!r.is_active());
+        r.begin(0);
+        assert!(r.is_active());
+        assert_eq!(r.drag_to(0), None); // already on the anchor
+        assert_eq!(r.drag_to(2), Some((0, 2))); // 0 -> 2, anchor advances
+        assert_eq!(r.anchor(), Some(2));
+        assert_eq!(r.drag_to(1), Some((2, 1))); // keeps following
+        assert_eq!(r.end(), Some(1));
+        assert!(!r.is_active());
+        assert_eq!(r.drag_to(0), None); // disarmed
+    }
 }
