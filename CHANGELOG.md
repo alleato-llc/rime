@@ -7,6 +7,16 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`popover`** — the non-modal cousin of `modal`: a floating card that is
+  draggable (the whole card is the move handle) and border-resizable, sealed with
+  `opaque` so a press on it does not fall through to the surface behind. It holds
+  no position state — the caller owns where the card sits and how big it is, and
+  supplies the drag messages — so the same primitive backs a status-bar drill-in,
+  an inspector, or any movable panel. Ships with `resize_edges` (just the invisible
+  edge/corner grab strips, for a card that overlays its own controls above them)
+  and `ResizeEdge` (`Right` / `Bottom` / `Corner`, with `axes()` giving which
+  dimensions a grab changes). tty's metric drill-ins and Env view both use it,
+  replacing two copies of the same hand-rolled resize-strip code.
 - **`button::ghost_compact`** — a borderless text button like `ghost` but with
   tight padding (`[4, 7]` vs `[7, 16]`), for a cluster of single-glyph controls
   (a card's `+` / `−` / `×` / `⊞`) that should read as one group rather than
