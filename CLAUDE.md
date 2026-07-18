@@ -48,7 +48,10 @@ One crate, three modules.
   reference row)), each generic over the message type, stateless, drawing from
   `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless
   too: the host owns open-menu / active-tab / hovered / active-section state and
-  passes it in, so one component backs several apps.
+  passes it in, so one component backs several apps. `tabs` keeps even drag-reorder
+  host-side — it exposes `Reorder` (a `begin`/`drag_to`/`end` tracker) + `reorder_slice`
+  so the host applies each move to its own collection, and `TabBarStyle.filled` toggles
+  the raised-band vs blended-into-its-container look.
 - `icons` — a small embedded icon font (a Lucide subset, ISC-licensed), so hosts
   get glyphs that always render instead of depending on the platform's emoji/PUA
   coverage. A host loads `icons::FONT_BYTES` once via `.font(..)` on the iced

@@ -227,7 +227,9 @@ cargo run -p rime-demo
 - `context_menu` — right-click popup, floated at a point
 - `menu_bar` — top-level dropdown menus with optional submenu flyouts, plus a
   `_with_trailing` variant that pins a toolbar item to the right of the bar
-- `tabs` — document tab strip with hover-reveal close + background-press hook
+- `tabs` — document tab strip with hover-reveal close + right-press / background-press
+  hooks; `TabBarStyle.filled` toggles the raised background band, and `Reorder` +
+  `reorder_slice` are the shared drag-to-reorder helpers a host drives
 
 ## What belongs here
 

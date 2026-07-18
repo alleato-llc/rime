@@ -26,6 +26,17 @@ so current work lives under **Unreleased**.
   (return `None` to keep the default `ink`), consulted per visible cell at draw
   time. Backward-compatible — existing tables render unchanged. tty grades a
   process table's CPU% cell amber/red by load with it.
+- **`tabs` drag-to-reorder helpers.** `Reorder` (a `begin`/`drag_to`/`end` tracker)
+  plus `reorder_slice(items, from, to)` (the alloc-free subrange rotate behind a
+  browser-style tab move) capture the drag bookkeeping every strip re-derived by
+  hand. The `tabs` widget stays stateless — the host owns the tracker, arms it from
+  `on_activate` (a mouse-down press), feeds it the hovered index, and applies each
+  move — so document tabs, terminal tabs, and nested pane-tabs all drive the same
+  three calls. tty routes both its window-level and its pane-tab reorder through
+  them.
+- **`TabBarStyle.filled`** (default `true`) — set `false` to drop the strip's
+  `surface` background band so it blends into whatever it sits on (e.g. a tab strip
+  nested inside a bordered pane, rather than reading as a second raised bar).
 
 ### Fixed
 - **`toggle` was invisible on light themes.** The off-state track (`hairline`)
