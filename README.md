@@ -219,6 +219,10 @@ cargo run -p rime-demo
 - `modal` — dimmed overlay panel
 - `dialog` — titled modal + message + action-button row, the alert/confirm
   shape
+- `popover` — the non-modal cousin of `modal`: a draggable, border-resizable
+  floating card that leaves the surface behind it live. The caller owns its
+  position/size and supplies the drag messages; `resize_edges` exposes just the
+  border grips, and `ResizeEdge` names which one (with `axes()` for its dimensions)
 - `banner` — dismissible notification strip
 - `context_menu` — right-click popup, floated at a point
 - `menu_bar` — top-level dropdown menus with optional submenu flyouts, plus a
