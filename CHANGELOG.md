@@ -7,6 +7,37 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`secure_input` widget** (`secure_input` module) — a masked password input
+  whose secret never enters iced. iced's `TextInput` round-trips its value as a
+  plain `String` through the message queue on every keystroke and clones it into
+  internal paragraph buffers every frame, none of them wiped or locked out of
+  swap; `secure_input` instead keeps the secret in exactly one caller-owned
+  **`SecretHandle`** — a fixed-capacity (4096-byte, never reallocated, so no
+  stale copy is left behind by a `realloc`), best-effort-`mlock`'d, and
+  zeroized-on-drop heap buffer (`region` + `zeroize`, the same crates dorado's
+  CLI uses; both are new rime dependencies). Because `mlock`/`munlock` act on
+  whole pages, the storage is over-allocated by one page and the secret lives in
+  a page-aligned, whole-page-sized window inside it, so locking never reaches
+  into a neighbouring allocation and unlocking on drop cannot strip protection
+  from another secret that would otherwise share the page; the lock guard is
+  also declared before the storage so `munlock` runs while the pages are still
+  mapped. Both properties are unit-tested, and the window is obtained with
+  `align_offset` rather than a custom `Layout`, so rime stays free of `unsafe`.
+  The widget (a custom advanced
+  `Widget`, like `grid`) mutates the buffer in place during event handling and
+  emits only *unit* `on_edit` / `on_submit` messages; it renders one uniform
+  mask bullet per character as plain quads, so the real bytes never reach the
+  text shaper. Editing surface v1: printable insert, Backspace/Delete,
+  ←/→/Home/End over uniform-width bullets, click-to-position, paste-in (the
+  intermediate clipboard `String` is wiped), Escape blurs, focusable by `Id`,
+  blinking caret on `text_input`'s cadence. Deliberately **no copy-out, no
+  selection, no reveal toggle** (see the module docs for why). Styled via the
+  same `input_style` as `text_field`, so the two sit in one form. Host API on
+  the handle: `new`/`len`/`is_empty`/`clear`/`with_bytes` (explicit guard
+  scope) plus `insert`/`remove`/`push_str`. Shown in `rime-demo` with a
+  char-count stat; the buffer logic is unit-tested (capacity saturation,
+  multibyte cursor math, wipe-on-clear/remove, no-realloc). Built for
+  `dorado-gui`'s password field, domain-free.
 - **`popover`** — the non-modal cousin of `modal`: a floating card that is
   draggable (the whole card is the move handle) and border-resizable, sealed with
   `opaque` so a press on it does not fall through to the surface behind. It holds

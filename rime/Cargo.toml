@@ -9,3 +9,7 @@ repository = "https://github.com/alleato-llc/rime"
 
 [dependencies]
 iced = { workspace = true }
+# `secure_input`'s secret buffer: mlock'd into RAM (best-effort) and wiped on
+# drop. The same crates dorado's CLI uses for its own password handling.
+region = "3"
+zeroize = "1"

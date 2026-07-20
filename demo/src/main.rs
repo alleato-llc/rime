@@ -14,9 +14,9 @@ use iced::{Element, Length, Theme, Vector};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
     autocomplete_field, bit_grid, button, caption, card, grid, header_row, labeled, line_chart,
-    pill, rename_bar, section, shortcut_row, slider, stat, text_field, title_strip, tooltip,
-    window_shell, BitBand, CellAlign, GridCell, GridSelection, LineChart, Series, Suggestion,
-    TooltipPosition,
+    pill, rename_bar, section, secure_input, shortcut_row, slider, stat, text_field, title_strip,
+    tooltip, window_shell, BitBand, CellAlign, GridCell, GridSelection, LineChart, SecretHandle,
+    Series, Suggestion, TooltipPosition,
 };
 
 // The demo grid's logical size — big enough to show virtualization + scroll.
@@ -58,6 +58,8 @@ struct Gallery {
     grid_selection: Option<GridSelection>,
     ac_value: String,
     ac_highlight: Option<usize>,
+    // The secure input's secret lives in this handle, never in a Message.
+    secret: SecretHandle,
     // A 16-bit register shown as RGB565 (R[15:11], G[10:5], B[4:0]).
     color565: u16,
     shot: Option<shot::Shot>,
@@ -65,13 +67,16 @@ struct Gallery {
 
 impl Gallery {
     fn new() -> Self {
-        Self {
+        let gallery = Self {
             // An arbitrary starting color so the bit fields are lit on launch
             // (RGB565 = R:10110 G:101010 B:01011, written in nibbles).
             color565: 0b1011_0101_0100_1011,
             shot: shot::configure(),
             ..Self::default()
-        }
+        };
+        // Pre-fill the secure input so its mask bullets show on launch.
+        gallery.secret.push_str("hunter2");
+        gallery
     }
 }
 
@@ -84,6 +89,9 @@ enum Message {
     GridSelected(usize, usize, bool),
     AcInput(String),
     AcAccept(usize),
+    // Unit messages: the secure input's edits carry no text by design.
+    SecretEdited,
+    SecretSubmitted,
     BitToggled(usize),
     Shot(shot::Event),
     Noop,
@@ -119,6 +127,9 @@ impl Gallery {
                 }
                 self.ac_highlight = None;
             }
+            // The handle already holds the edit; a view rebuild is all that's
+            // needed (the char-count stat below the field proves it fired).
+            Message::SecretEdited | Message::SecretSubmitted => {}
             Message::BitToggled(bit) => self.color565 ^= 1 << bit,
             Message::Shot(event) => {
                 if let Some(shot) = &mut self.shot {
@@ -190,6 +201,18 @@ impl Gallery {
                 .spacing(8),
                 section("Field + input"),
                 labeled("Name", text_field("type here…", &self.name, Message::Name)),
+                section("Secure input"),
+                caption("MASKED PASSWORD ENTRY — THE SECRET NEVER ENTERS A MESSAGE"),
+                labeled(
+                    "Password",
+                    secure_input(
+                        "password…",
+                        &self.secret,
+                        Message::SecretEdited,
+                        Message::SecretSubmitted,
+                    ),
+                ),
+                stat("chars held", self.secret.len().to_string()),
                 section("Autocomplete"),
                 caption("TYPE A FUNCTION PREFIX, e.g. \"s\" or \"m\""),
                 autocomplete_field(

@@ -170,6 +170,11 @@ cargo run -p rime-demo
 - `button` — primary/secondary/danger/ghost variants, plus `button::icon` for a
   borderless icon-only button (see [Icons](#icons))
 - `text_field` — text input
+- `secure_input` — masked password input over a caller-owned `SecretHandle`
+  (a fixed-capacity, mlock'd, zeroized-on-drop buffer): the secret never
+  enters the message queue, the widget tree, or the text shaper — the field
+  emits only unit `on_edit`/`on_submit` messages and renders uniform mask
+  bullets. Deliberately no copy-out, no selection, no reveal toggle
 - `labeled` — label + control row
 - `select` — dropdown
 - `slider` — labelled value slider with a readout

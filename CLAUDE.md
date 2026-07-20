@@ -45,8 +45,10 @@ One crate, three modules.
   text input + popup, plus a standalone `suggestion_list` for hosts that float the
   popup above the input instead of below), `rename` (`rename_bar`, an inline
   "rename this tab" field), `shortcut` (`shortcut_row`, a chord + description
-  reference row)), each generic over the message type, stateless, drawing from
-  `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless
+  reference row), `secure_input` (masked password entry over a caller-owned
+  `SecretHandle` — a fixed-capacity, mlock'd, zeroized buffer; the secret never
+  enters the message queue or the text shaper)), each generic over the message
+  type, stateless, drawing from `theme::tokens()`. The "chrome" widgets (`menu`/`tabs`/`settings`) are stateless
   too: the host owns open-menu / active-tab / hovered / active-section state and
   passes it in, so one component backs several apps. `tabs` keeps even drag-reorder
   host-side — it exposes `Reorder` (a `begin`/`drag_to`/`end` tracker) + `reorder_slice`
