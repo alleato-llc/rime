@@ -10,13 +10,13 @@
 mod shot;
 
 use iced::widget::{column, container, row, Space};
-use iced::{Element, Length, Theme, Vector};
+use iced::{Element, Length, Point, Theme, Vector};
 use rime::theme::{self, ThemeChoice};
 use rime::widgets::{
-    autocomplete_field, bit_grid, button, caption, card, grid, header_row, labeled, line_chart,
-    pill, rename_bar, section, secure_input, shortcut_row, slider, stat, text_field, title_strip,
-    tooltip, window_shell, BitBand, CellAlign, GridCell, GridSelection, LineChart, SecretHandle,
-    Series, Suggestion, TooltipPosition,
+    autocomplete_field, bit_grid, button, caption, card, context_menu, grid, header_row, labeled,
+    line_chart, pill, rename_bar, section, secure_input, shortcut_row, slider, stat, text_field,
+    title_strip, tooltip, window_shell, BitBand, CellAlign, GridCell, GridSelection, LineChart,
+    MenuItem, SecretHandle, Series, Suggestion, TooltipPosition,
 };
 
 // The demo grid's logical size — big enough to show virtualization + scroll.
@@ -62,6 +62,10 @@ struct Gallery {
     secret: SecretHandle,
     // A 16-bit register shown as RGB565 (R[15:11], G[10:5], B[4:0]).
     color565: u16,
+    // The context-menu showcase: whether it's open, and whether its submenu
+    // flyout is expanded (host-owned state, the rime rule).
+    menu_open: bool,
+    submenu_expanded: bool,
     shot: Option<shot::Shot>,
 }
 
@@ -71,6 +75,10 @@ impl Gallery {
             // An arbitrary starting color so the bit fields are lit on launch
             // (RGB565 = R:10110 G:101010 B:01011, written in nibbles).
             color565: 0b1011_0101_0100_1011,
+            // The screenshot harness can seed the context menu open with its
+            // submenu flown out, so the review image shows the flyout.
+            menu_open: std::env::var("RIME_DEMO_SHOT_MENU").is_ok(),
+            submenu_expanded: std::env::var("RIME_DEMO_SHOT_MENU").is_ok(),
             shot: shot::configure(),
             ..Self::default()
         };
@@ -93,6 +101,10 @@ enum Message {
     SecretEdited,
     SecretSubmitted,
     BitToggled(usize),
+    OpenMenu,
+    CloseMenu,
+    ExpandSubmenu(bool),
+    MenuPick,
     Shot(shot::Event),
     Noop,
 }
@@ -131,6 +143,16 @@ impl Gallery {
             // needed (the char-count stat below the field proves it fired).
             Message::SecretEdited | Message::SecretSubmitted => {}
             Message::BitToggled(bit) => self.color565 ^= 1 << bit,
+            Message::OpenMenu => self.menu_open = true,
+            Message::CloseMenu => {
+                self.menu_open = false;
+                self.submenu_expanded = false;
+            }
+            Message::ExpandSubmenu(open) => self.submenu_expanded = open,
+            Message::MenuPick => {
+                self.menu_open = false;
+                self.submenu_expanded = false;
+            }
             Message::Shot(event) => {
                 if let Some(shot) = &mut self.shot {
                     return shot::handle(shot, event);
@@ -328,13 +350,16 @@ impl Gallery {
                     },
                     160.0,
                 ),
+                section("Context menu (with submenu)"),
+                caption("Open a right-click menu whose \"More…\" row flies out a submenu."),
+                button::secondary("Open context menu", Message::OpenMenu),
                 Space::new().height(8),
                 button::secondary("Toggle theme", Message::ToggleTheme),
             ]
             .spacing(16),
         );
 
-        iced::widget::container(
+        let content = iced::widget::container(
             iced::widget::scrollable(
                 iced::widget::container(body)
                     .padding(24)
@@ -343,8 +368,35 @@ impl Gallery {
             )
             .height(Length::Fill),
         )
-        .height(Length::Fill)
-        .into()
+        .height(Length::Fill);
+
+        // The context menu is a full-window overlay; a submenu row flies out
+        // to its right when expanded (host-owned state).
+        if self.menu_open {
+            let items = vec![
+                MenuItem::action("Copy", Message::MenuPick),
+                MenuItem::action("Paste", Message::MenuPick),
+                MenuItem::separator(),
+                MenuItem::submenu(
+                    "More…",
+                    vec![
+                        MenuItem::action("Duplicate", Message::MenuPick),
+                        MenuItem::action("Rename", Message::MenuPick),
+                        MenuItem::action("Delete", Message::MenuPick),
+                    ],
+                    self.submenu_expanded,
+                    Message::ExpandSubmenu(!self.submenu_expanded),
+                ),
+            ];
+            context_menu(
+                content,
+                &items,
+                Point::new(220.0, 260.0),
+                Message::CloseMenu,
+            )
+        } else {
+            content.into()
+        }
     }
 }
 

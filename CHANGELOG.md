@@ -7,6 +7,13 @@ so current work lives under **Unreleased**.
 ## [Unreleased]
 
 ### Added
+- **`context_menu` submenu flyouts** — a `context_menu` now renders an
+  expanded `Item::submenu`'s flyout to the right of its parent row, exactly as
+  `menu_bar` already did (previously only the submenu *row* drew; its nested
+  items had nowhere to appear). The anchoring math is factored into a shared
+  `submenu_flyout` helper used by both, so their behavior can't drift. Backward
+  compatible: menus without submenus are unchanged. Shown in the demo
+  ("Context menu (with submenu)") and unit-tested (`menu_tests.rs`).
 - **`secure_input` widget** (`secure_input` module) — a masked password input
   whose secret never enters iced. iced's `TextInput` round-trips its value as a
   plain `String` through the message queue on every keystroke and clones it into

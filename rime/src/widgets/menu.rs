@@ -161,22 +161,10 @@ pub fn menu_bar_with_trailing<'a, M: Clone + 'a>(
     let open_menu = open.and_then(|i| menus.get(i));
     let dropdown = open_menu.map(|m| render_panel(&m.items));
     // If the open menu has an expanded submenu, build its flyout + the y-offset to
-    // anchor it next to its parent row.
-    let flyout = open_menu.and_then(|m| {
-        let mut y = BAR_HEIGHT + PANEL_PAD;
-        for item in &m.items {
-            if let Item::Submenu {
-                items,
-                expanded: true,
-                ..
-            } = item
-            {
-                return Some((render_panel(items), y));
-            }
-            y += item.height();
-        }
-        None
-    });
+    // anchor it next to its parent row (below the bar).
+    let flyout = open_menu
+        .and_then(|m| submenu_flyout(&m.items))
+        .map(|(panel, offset)| (panel, BAR_HEIGHT + offset));
     for (i, menu) in menus.iter().enumerate() {
         let is_open = open == Some(i);
         let next = if is_open { None } else { Some(i) };
@@ -251,6 +239,33 @@ pub fn menu_bar_with_trailing<'a, M: Clone + 'a>(
     layers.push(bar_layer).into()
 }
 
+/// The fixed width of a panel — a caller anchoring a submenu flyout to the
+/// right of its parent offsets the flyout's x by this.
+pub(crate) const PANEL_W: f32 = PANEL_WIDTH;
+
+/// If `items` contains an expanded submenu, build its flyout panel plus the
+/// vertical offset — measured from the top of the *parent* panel — at which to
+/// anchor it beside its parent row. Shared by [`menu_bar`] and
+/// [`context_menu`](super::context_menu) so submenus behave identically in
+/// both. Only the first expanded submenu is rendered (one flyout level).
+pub(crate) fn submenu_flyout<'a, M: Clone + 'a>(
+    items: &[Item<M>],
+) -> Option<(Element<'a, M>, f32)> {
+    let mut y = PANEL_PAD;
+    for item in items {
+        if let Item::Submenu {
+            items,
+            expanded: true,
+            ..
+        } = item
+        {
+            return Some((render_panel(items), y));
+        }
+        y += item.height();
+    }
+    None
+}
+
 /// Build a dropdown panel from a slice of items (used for both a top-level menu's
 /// dropdown and a submenu's flyout).
 pub(crate) fn render_panel<'a, M: Clone + 'a>(items: &[Item<M>]) -> Element<'a, M> {
@@ -323,3 +338,7 @@ pub(crate) fn render_panel<'a, M: Clone + 'a>(items: &[Item<M>]) -> Element<'a, 
         })
         .into()
 }
+
+#[cfg(test)]
+#[path = "menu_tests.rs"]
+mod tests;

@@ -229,7 +229,7 @@ cargo run -p rime-demo
   position/size and supplies the drag messages; `resize_edges` exposes just the
   border grips, and `ResizeEdge` names which one (with `axes()` for its dimensions)
 - `banner` — dismissible notification strip
-- `context_menu` — right-click popup, floated at a point
+- `context_menu` — right-click popup, floated at a point, with submenu flyouts
 - `menu_bar` — top-level dropdown menus with optional submenu flyouts, plus a
   `_with_trailing` variant that pins a toolbar item to the right of the bar
 - `tabs` — document tab strip with hover-reveal close + right-press / background-press
